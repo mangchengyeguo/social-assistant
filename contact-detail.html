@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>联系人详情 - AI社交助手</title>
+    <link rel="stylesheet" href="contact-detail.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="chat.html" class="back-button">←</a>
+            <h1 id="contact-name">联系人昵称</h1>
+        </header>
+
+        <div class="main-content">
+            <!-- 基本信息模块 -->
+            <section class="basic-info">
+                <div class="edit-profile-btn">
+                    <button class="unified-edit-btn">编辑</button>
+                </div>
+                <div class="avatar-section">
+                    <div class="avatar-container">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIGZpbGw9IiNFOUVDRUYiLz48cGF0aCBkPSJNMjUgMjVDMjguNSAyNSAzMS41IDIyIDMxLjUgMThTMjguNSAxMSAyNSAxMVMyMC41IDE0IDIwLjUgMThTMjEuNSAyNSAyNVpNMzUgMzZDMzUgMzIgMzAgMjggMjUgMjhTMTUgMzIgMTUgMzZWMzhINDVWMzZaIiBmaWxsPSIjQkJCIi8+PC9zdmc+" alt="联系人头像" id="contact-avatar">
+                        <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
+                        <div class="avatar-edit-hint">点击修改头像</div>
+                    </div>
+                </div>
+                <div class="info-list">
+                    <div class="info-item">
+                        <span class="label">MBTI</span>
+                        <span class="value" id="contact-mbti">INFJ</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">年龄</span>
+                        <span class="value" id="contact-age">25</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">性别</span>
+                        <span class="value" id="contact-gender">女</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">关系</span>
+                        <span class="value" id="contact-relationship">同事</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 标签模块 -->
+            <section class="tags-section">
+                <div class="section-header">
+                    <h2>个性标签</h2>
+                    <button class="add-tag-btn">添加标签</button>
+                </div>
+                <div class="tags-container">
+                    <div class="tags-scroll">
+                        <!-- 标签将通过JS动态添加 -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- 对话模块 -->
+            <section class="chat-section">
+                <div class="chat-channels">
+                    <button class="channel-btn active" data-channel="how-to">如何沟通</button>
+                    <button class="channel-btn" data-channel="analyze">帮我解读</button>
+                    <button class="channel-btn" data-channel="preferences">猜ta喜欢</button>
+                    <button class="clear-chat-btn">清除记录</button>
+                </div>
+                <div class="chat-container">
+                    <div class="chat-messages">
+                        <!-- 消息将通过JS动态添加 -->
+                    </div>
+                    <div class="input-area">
+                        <textarea placeholder="输入您想说的话..." class="message-input"></textarea>
+                        <button class="send-btn">发送</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- 编辑信息的模态框 -->
+    <div class="modal" id="edit-modal">
+        <div class="modal-content">
+            <h2 class="modal-title">编辑基本信息</h2>
+            <form id="edit-form">
+                <div class="form-group">
+                    <label for="edit-mbti">MBTI</label>
+                    <select id="edit-mbti" name="mbti">
+                        <option value="">未知</option>
+                        <option value="INTJ">INTJ</option>
+                        <option value="INTP">INTP</option>
+                        <option value="ENTJ">ENTJ</option>
+                        <option value="ENTP">ENTP</option>
+                        <option value="INFJ">INFJ</option>
+                        <option value="INFP">INFP</option>
+                        <option value="ENFJ">ENFJ</option>
+                        <option value="ENFP">ENFP</option>
+                        <option value="ISTJ">ISTJ</option>
+                        <option value="ISFJ">ISFJ</option>
+                        <option value="ESTJ">ESTJ</option>
+                        <option value="ESFJ">ESFJ</option>
+                        <option value="ISTP">ISTP</option>
+                        <option value="ISFP">ISFP</option>
+                        <option value="ESTP">ESTP</option>
+                        <option value="ESFP">ESFP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-age">年龄</label>
+                    <input type="number" id="edit-age" name="age" min="1" max="150" placeholder="请输入年龄">
+                </div>
+                <div class="form-group">
+                    <label for="edit-gender">性别</label>
+                    <select id="edit-gender" name="gender">
+                        <option value="">未知</option>
+                        <option value="male">男</option>
+                        <option value="female">女</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-relationship">关系</label>
+                    <input type="text" id="edit-relationship" name="relationship" placeholder="请输入关系">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn">取消</button>
+                    <button type="submit" class="save-btn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 标签生成的模态框 -->
+    <div class="modal" id="tag-modal">
+        <div class="modal-content">
+            <button class="modal-close">×</button>
+            <h2 class="modal-title">添加个性标签</h2>
+            <div class="tag-input-methods">
+                <div class="method-tabs">
+                    <button class="method-tab" data-method="manual">主观描述</button>
+                    <button class="method-tab active" data-method="ai">AI分析</button>
+                </div>
+                
+                <!-- 主观描述部分 -->
+                <div class="method-content" id="manual-method">
+                    <div class="manual-tag-input">
+                        <div class="input-hint">
+                            <p>请描述这位联系人的性格特点、行为习惯等，例如：</p>
+                            <ul>
+                                <li>性格特征：开朗、内向、急躁等</li>
+                                <li>行为习惯：喜欢运动、经常迟到等</li>
+                                <li>处事方式：做事认真、善于沟通等</li>
+                            </ul>
+                        </div>
+                        <textarea class="custom-tag-input" placeholder="请输入您对这位联系人的描述，按回车添加标签..." rows="4"></textarea>
+                        <div class="manual-tags-container"></div>
+                    </div>
+                </div>
+
+                <!-- AI分析部分 -->
+                <div class="method-content active" id="ai-method">
+                    <div class="ai-analysis-options">
+                        <div class="input-hint">
+                            <p>请上传内容，AI将基于分析生成个性标签：</p>
+                        </div>
+                        
+                        <!-- 文字上传 -->
+                        <div class="analysis-option">
+                            <h3>📝 上传文字</h3>
+                            <p class="option-desc">上传联系人写过的文字内容，AI将分析其表达特点</p>
+                            <textarea class="tag-input" placeholder="请粘贴联系人写过的文字内容..." rows="3"></textarea>
+                        </div>
+
+                        <!-- 图片上传 -->
+                        <div class="analysis-option">
+                            <h3>📸 上传图片</h3>
+                            <p class="option-desc">上传聊天记录截图、朋友圈等图片，AI将分析联系人个性特征</p>
+                            <div class="file-upload-container">
+                                <input type="file" id="image-upload" accept=".png,.jpg,.jpeg" multiple>
+                                <label for="image-upload" class="upload-btn">选择文件</label>
+                                <button type="button" class="clear-files-btn" style="display: none;">清空选择</button>
+                            </div>
+                            <div class="selected-files" id="image-files"></div>
+                        </div>
+
+                        <button class="generate-btn">AI生成标签</button>
+                        <div class="loading" style="display: none;">AI正在分析中...</div>
+                        <div class="error" style="display: none;"></div>
+                        <div class="generated-tags"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button type="button" class="cancel-btn">取消</button>
+                <button type="button" class="add-tags-btn">添加标签</button>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <!-- 在这里添加脚本引用 -->
+    <script src="config.js"></script>
+    <script src="contact-detail.js"></script>
+</body>
+</html> 

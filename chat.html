@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>定制对话 - AI社交助手</title>
+    <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-button">←</a>
+            <h1>定制对话</h1>
+            <button class="add-contact-btn">新建联系人</button>
+        </header>
+
+        <div class="main-content">
+            <div class="contacts-grid">
+                <!-- 联系人卡片将通过JS动态生成 -->
+            </div>
+            
+            <div class="alphabet-nav">
+                <!-- 字母导航将通过JS动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 新建联系人模态框 -->
+    <div class="modal" id="contact-modal">
+        <div class="modal-content">
+            <h2 class="modal-title">新建联系人</h2>
+            <form id="contact-form">
+                <div class="avatar-upload">
+                    <div class="avatar-preview">
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIGZpbGw9IiNFOUVDRUYiLz48cGF0aCBkPSJNMjUgMjVDMjguNSAyNSAzMS41IDIyIDMxLjUgMThTMjguNSAxMSAyNSAxMVMyMC41IDE0IDIwLjUgMThTMjEuNSAyNSAyNVpNMzUgMzZDMzUgMzIgMzAgMjggMjUgMjhTMTUgMzIgMTUgMzZWMzhINDVWMzZaIiBmaWxsPSIjQkJCIi8+PC9zdmc+" alt="头像预览" id="avatar-preview">
+                    </div>
+                    <input type="file" id="avatar-input" accept="image/*">
+                    <label for="avatar-input">上传头像</label>
+                </div>
+                <div class="form-group">
+                    <label for="contact-name">昵称</label>
+                    <input type="text" id="contact-name" name="name" required maxlength="12" placeholder="请输入联系人昵称">
+                </div>
+                <div class="form-group">
+                    <label for="contact-mbti">MBTI</label>
+                    <select id="contact-mbti" name="mbti">
+                        <option value="">请选择</option>
+                        <option value="INTJ">INTJ</option>
+                        <option value="INTP">INTP</option>
+                        <option value="ENTJ">ENTJ</option>
+                        <option value="ENTP">ENTP</option>
+                        <option value="INFJ">INFJ</option>
+                        <option value="INFP">INFP</option>
+                        <option value="ENFJ">ENFJ</option>
+                        <option value="ENFP">ENFP</option>
+                        <option value="ISTJ">ISTJ</option>
+                        <option value="ISFJ">ISFJ</option>
+                        <option value="ESTJ">ESTJ</option>
+                        <option value="ESFJ">ESFJ</option>
+                        <option value="ISTP">ISTP</option>
+                        <option value="ISFP">ISFP</option>
+                        <option value="ESTP">ESTP</option>
+                        <option value="ESFP">ESFP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="contact-birthday">生日</label>
+                    <input type="date" id="contact-birthday" name="birthday">
+                </div>
+                <div class="form-group">
+                    <label>性别</label>
+                    <div class="radio-group">
+                        <input type="radio" id="gender-male" name="gender" value="male">
+                        <label for="gender-male">男</label>
+                        <input type="radio" id="gender-female" name="gender" value="female">
+                        <label for="gender-female">女</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="contact-relationship">关系</label>
+                    <input type="text" id="contact-relationship" name="relationship" placeholder="例如：同事、朋友">
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn">取消</button>
+                    <button type="submit" class="save-btn">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="chat.js"></script>
+</body>
+</html> 

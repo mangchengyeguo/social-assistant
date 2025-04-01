@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社交应急助手</title>
+    <link rel="stylesheet" href="emergency.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="index.html" class="back-button">←</a>
+            <h1>社交应急助手</h1>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="scenarios">场景话术</button>
+            <button class="tab" data-tab="formulas">万能公式</button>
+            <button class="tab" data-tab="ai-response">AI回复</button>
+        </div>
+
+        <div id="scenarios" class="tab-content active">
+            <div class="scenario-categories">
+                <div class="category">
+                    <h2 class="category-title">职场生存篇</h2>
+                    <div class="scenario-grid" id="workplace-scenarios"></div>
+                </div>
+                
+                <div class="category">
+                    <h2 class="category-title">亲友关系篇</h2>
+                    <div class="scenario-grid" id="relationship-scenarios"></div>
+                </div>
+                
+                <div class="category">
+                    <h2 class="category-title">陌生人社交篇</h2>
+                    <div class="scenario-grid" id="stranger-scenarios"></div>
+                </div>
+                
+                <div class="category">
+                    <h2 class="category-title">网络社交篇</h2>
+                    <div class="scenario-grid" id="online-scenarios"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="formulas" class="tab-content">
+            <div class="formula-categories">
+                <div class="formula-category">
+                    <h2>情绪管理类公式</h2>
+                    <div class="formula-grid">
+                        <div class="formula-card">
+                            <h3>情绪认同公式</h3>
+                            <div class="formula-structure">
+                                认可情绪 → 分享体验 → 提供支持
+                            </div>
+                            <div class="formula-example">
+                                我能理解你的沮丧（认可）， 我们团队上周也遇到类似问题（分享）， 要不要一起看看解决方案？（支持）
+                            </div>
+                        </div>
+                        <div class="formula-card">
+                            <h3>压力缓冲公式</h3>
+                            <div class="formula-structure">
+                                确认问题 → 争取时间 → 提供方案
+                            </div>
+                            <div class="formula-example">
+                                您指出的这个问题很重要（确认）， 我需要20分钟核查数据（时间）， 下午3点前给您完整答复（方案）
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="formula-category">
+                    <h2>关系推进类公式</h2>
+                    <div class="formula-grid">
+                        <div class="formula-card">
+                            <h3>破冰连接公式</h3>
+                            <div class="formula-structure">
+                                观察细节 → 发现共性 → 轻量邀约
+                            </div>
+                            <div class="formula-example">
+                                注意到您常分享咖啡知识（观察）， 我也在学手冲咖啡（共性）， 有空可以交流心得？（邀约）
+                            </div>
+                        </div>
+                        <div class="formula-card">
+                            <h3>共识建立公式</h3>
+                            <div class="formula-structure">
+                                寻找共同点 → 转化分歧点 → 达成妥协
+                            </div>
+                            <div class="formula-example">
+                                我们都希望提升用户体验（共同点）， 执行方式可以再优化（转化分歧）， 先试行A方案两周如何？（妥协）
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="formula-category">
+                    <h2>问题解决类公式</h2>
+                    <div class="formula-grid">
+                        <div class="formula-card">
+                            <h3>澄清确认公式</h3>
+                            <div class="formula-structure">
+                                复述要点 → 确认重点 → 明确边界
+                            </div>
+                            <div class="formula-example">
+                                您需要周三前完成设计稿（要点）， 其中LOGO设计是首要重点（确认）， 其他部分可以后续补充（边界）
+                            </div>
+                        </div>
+                        <div class="formula-card">
+                            <h3>方案建议公式</h3>
+                            <div class="formula-structure">
+                                分析现状 → 提供选项 → 预测结果
+                            </div>
+                            <div class="formula-example">
+                                目前转化率下降5%（现状）， 可以增加促销或优化页面（选项）， 预计分别能提升3-8%（预测）
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="formula-category">
+                    <h2>冲突应对类公式</h2>
+                    <div class="formula-grid">
+                        <div class="formula-card">
+                            <h3>理性回应公式</h3>
+                            <div class="formula-structure">
+                                隔离情绪 → 聚焦事实 → 引导解决
+                            </div>
+                            <div class="formula-example">
+                                我们先不讨论对错（隔离）， 根据数据来看...（事实）， 建议从这三个方面改进（引导）
+                            </div>
+                        </div>
+                        <div class="formula-card">
+                            <h3>优雅退出公式</h3>
+                            <div class="formula-structure">
+                                肯定价值 → 说明限制 → 保持开放
+                            </div>
+                            <div class="formula-example">
+                                这个提议很有创意（肯定）， 目前资源暂时无法支持（限制）， 未来条件成熟再考虑（开放）
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="formula-category">
+                    <h2>激励赋能类公式</h2>
+                    <div class="formula-grid">
+                        <div class="formula-card">
+                            <h3>优势激活公式</h3>
+                            <div class="formula-structure">
+                                指出优势 → 案例佐证 → 场景应用
+                            </div>
+                            <div class="formula-example">
+                                你的文案能力很突出（优势）， 上次活动的转化证明这点（佐证）， 这次新品推广正需要这种能力（应用）
+                            </div>
+                        </div>
+                        <div class="formula-card">
+                            <h3>成长引导公式</h3>
+                            <div class="formula-structure">
+                                现状评估 → 进阶路径 → 收益展望
+                            </div>
+                            <div class="formula-example">
+                                目前完成度已达80%（现状）， 再优化这两个环节就能突破（路径）， 预计能提升30%效果（收益）
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="ai-response" class="tab-content">
+            <div class="input-area">
+                <div class="form-group">
+                    <label>场景类型</label>
+                    <select name="sceneType" class="scene-type" aria-label="场景类型">
+                        <option value="">请选择场景类型</option>
+                        <option value="workplace">职场谈判</option>
+                        <option value="meeting">工作会议</option>
+                        <option value="family">家庭聚餐</option>
+                        <option value="date">约会场合</option>
+                        <option value="academic">学术交流</option>
+                        <option value="business">商务谈判</option>
+                        <option value="friend">朋友聚会</option>
+                        <option value="stranger">陌生人社交</option>
+                        <option value="online">网络社交</option>
+                        <option value="public">公共演讲</option>
+                        <option value="team">团队协作</option>
+                        <option value="interview">面试场合</option>
+                        <option value="social-media">社交媒体互动</option>
+                        <option value="cultural">文化交流</option>
+                        <option value="neighbor">邻里交往</option>
+                        <option value="custom">自定义...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>对象关系</label>
+                    <select name="relationship" class="relation-type" aria-label="对象关系">
+                        <option value="">请选择对象关系</option>
+                        <option value="colleague">同事</option>
+                        <option value="boss">上级领导</option>
+                        <option value="subordinate">下属</option>
+                        <option value="friend">朋友</option>
+                        <option value="family">家人</option>
+                        <option value="partner">恋人</option>
+                        <option value="stranger">陌生人</option>
+                        <option value="client">客户</option>
+                        <option value="business-partner">合作伙伴</option>
+                        <option value="teacher">老师</option>
+                        <option value="student">学生</option>
+                        <option value="neighbor">邻居</option>
+                        <option value="online-friend">网友</option>
+                        <option value="service">服务人员</option>
+                        <option value="new-contact">社交圈新人</option>
+                        <option value="custom">自定义...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>我的角色</label>
+                    <select name="role" class="role-type" aria-label="我的角色">
+                        <option value="">请选择您的角色</option>
+                        <option value="listener">倾听者</option>
+                        <option value="advisor">建议者</option>
+                        <option value="coordinator">协调者</option>
+                        <option value="leader">主导者</option>
+                        <option value="supporter">支持者</option>
+                        <option value="observer">观察者</option>
+                        <option value="mediator">调解者</option>
+                        <option value="organizer">组织者</option>
+                        <option value="participant">参与者</option>
+                        <option value="guide">引导者</option>
+                        <option value="learner">学习者</option>
+                        <option value="sharer">分享者</option>
+                        <option value="decision-maker">决策者</option>
+                        <option value="innovator">创新者</option>
+                        <option value="maintainer">关系维护者</option>
+                        <option value="custom">自定义...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>核心诉求</label>
+                    <select name="coreNeed" class="demand-type" aria-label="核心诉求">
+                        <option value="">请选择核心诉求</option>
+                        <option value="resolve-conflict">化解冲突</option>
+                        <option value="build-trust">建立信任</option>
+                        <option value="express-needs">表达诉求</option>
+                        <option value="seek-approval">获取认同</option>
+                        <option value="maintain-relationship">维护关系</option>
+                        <option value="seek-support">寻求支持</option>
+                        <option value="resolve-misunderstanding">解决误会</option>
+                        <option value="improve-understanding">增进理解</option>
+                        <option value="improve-communication">改善沟通</option>
+                        <option value="handle-stress">处理压力</option>
+                        <option value="set-boundary">建立边界</option>
+                        <option value="seek-cooperation">寻求合作</option>
+                        <option value="express-gratitude">表达感谢</option>
+                        <option value="handle-rejection">处理拒绝</option>
+                        <option value="seek-feedback">寻求反馈</option>
+                        <option value="custom">自定义...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>补充说明</label>
+                    <textarea class="situation-input" placeholder="请描述紧急程度/历史矛盾/文化禁忌等补充信息..."></textarea>
+                </div>
+                <button class="generate-btn">生成回复建议</button>
+            </div>
+            <div class="response-area">
+                <div class="response-content">
+                    <div class="response-version gentle hidden">
+                        <h3>温柔版</h3>
+                        <p class="style-note">高频使用缓和语气词（"或许""可能"）</p>
+                        <div class="response-text"></div>
+                        <div class="steps"></div>
+                    </div>
+                    <div class="response-version strong hidden">
+                        <h3>强势版</h3>
+                        <p class="style-note">增加事实数据引用与逻辑连接词</p>
+                        <div class="response-text"></div>
+                        <div class="steps"></div>
+                    </div>
+                    <div class="response-version neutral hidden">
+                        <h3>中性版</h3>
+                        <p class="style-note">标准化句式结构，隐藏情绪倾向</p>
+                        <div class="response-text"></div>
+                        <div class="steps"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="scenarios.js"></script>
+    <script src="emergency.js"></script>
+</body>
+</html> 
