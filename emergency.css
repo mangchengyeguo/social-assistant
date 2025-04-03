@@ -8,18 +8,26 @@
 body {
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     min-height: 100vh;
+    padding: 20px;
 }
 
 .container {
     max-width: 800px;
     margin: 0 auto;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     padding: 2rem;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
 }
 
 header {
     display: flex;
     align-items: center;
     margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #eef2f7;
 }
 
 .back-button {
@@ -31,122 +39,173 @@ header {
     border-radius: 50%;
     background: white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .back-button:hover {
     transform: translateX(-5px);
+    background: #f8f9fa;
 }
 
 h1 {
     color: #2c3e50;
-    font-size: 2rem;
+    font-size: 1.8rem;
+    font-weight: 600;
 }
 
-.tabs {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.tab {
-    padding: 0.8rem 1.5rem;
-    border: none;
-    border-radius: 10px;
-    background: white;
-    color: #2c3e50;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.tab.active {
-    background: #2c3e50;
-    color: white;
-}
-
-.tab-content {
-    display: none;
+.ai-response-container {
     background: white;
     border-radius: 15px;
-    padding: 2rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.tab-content.active {
-    display: block;
-}
-
-.scenario-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1.5rem;
-}
-
-.scenario-card {
-    background: #f8f9fa;
-    border-radius: 10px;
-    padding: 1.5rem;
-    cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.scenario-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-}
-
-.scenario-card h3 {
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
-}
-
-.scenario-card .preview {
-    color: #666;
-    font-size: 0.9rem;
+    overflow: hidden;
 }
 
 .input-area {
-    margin-bottom: 2rem;
+    padding: 2rem;
+    background: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    color: #2c3e50;
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.form-group select {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 2px solid #eef2f7;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    color: #2c3e50;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%232c3e50' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1em;
+}
+
+.form-group select:focus {
+    outline: none;
+    border-color: #4a90e2;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
 }
 
 .situation-input {
     width: 100%;
-    height: 150px;
+    min-height: 120px;
     padding: 1rem;
-    border: 1px solid #ddd;
+    border: 2px solid #eef2f7;
     border-radius: 10px;
-    resize: none;
-    font-size: 1rem;
-    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    color: #2c3e50;
+    background: #f8f9fa;
+    resize: vertical;
+    transition: all 0.3s ease;
+}
+
+.situation-input:focus {
+    outline: none;
+    border-color: #4a90e2;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
 }
 
 .generate-btn {
-    background: #2c3e50;
-    color: white;
+    width: 100%;
+    padding: 1rem;
     border: none;
-    padding: 1rem 2rem;
     border-radius: 10px;
-    cursor: pointer;
+    background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+    color: white;
     font-size: 1rem;
-    transition: background 0.3s ease;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
 }
 
 .generate-btn:hover {
-    background: #34495e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.2);
+}
+
+.generate-btn:active {
+    transform: translateY(0);
 }
 
 .response-area {
+    margin-top: 2rem;
+    padding: 2rem;
     background: #f8f9fa;
-    border-radius: 10px;
-    padding: 1.5rem;
+    border-radius: 15px;
     min-height: 200px;
 }
 
 .response-content {
     color: #2c3e50;
-    line-height: 1.6;
+    line-height: 1.8;
+    font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+    
+    .input-area {
+        padding: 1rem;
+    }
+    
+    .form-group select,
+    .situation-input {
+        font-size: 16px; /* 防止iOS缩放 */
+    }
+    
+    .generate-btn {
+        padding: 0.8rem;
+    }
+}
+
+/* 加载动画 */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.loading {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* 错误提示 */
+.error-message {
+    color: #e74c3c;
+    padding: 1rem;
+    border-radius: 10px;
+    background: #fdf0ef;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+/* 成功提示 */
+.success-message {
+    color: #27ae60;
+    padding: 1rem;
+    border-radius: 10px;
+    background: #edf7f0;
+    margin-top: 1rem;
+    font-size: 0.9rem;
 }
 
 /* 基础样式 */
@@ -332,74 +391,6 @@ h1 {
 
 .close-modal:hover {
     background: #357abd;
-}
-
-/* AI回复区域样式 */
-.input-area {
-    margin-bottom: 30px;
-}
-
-.situation-input {
-    width: 100%;
-    height: 120px;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    resize: vertical;
-    font-size: 16px;
-    margin-bottom: 15px;
-}
-
-.generate-btn {
-    padding: 12px 24px;
-    background: #4a90e2;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background 0.3s ease;
-}
-
-.generate-btn:hover {
-    background: #357abd;
-}
-
-.response-area {
-    background: #fff;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-    .container {
-        padding: 15px;
-    }
-
-    .tabs {
-        flex-wrap: wrap;
-    }
-
-    .tab {
-        flex: 1 1 auto;
-        text-align: center;
-        padding: 10px;
-    }
-
-    .scenario-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .category {
-        padding: 15px;
-    }
-
-    .modal-content {
-        padding: 20px;
-        width: 95%;
-    }
 }
 
 /* 公式区域样式 */

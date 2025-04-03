@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API测试</title>
+    <style>
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+        .warning {
+            background-color: #fcf8e3;
+            color: #8a6d3b;
+        }
+        #connectionInfo {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <h1>API连接测试</h1>
+    <button onclick="testConnection()">测试连接</button>
+    <button onclick="checkHealth()">检查服务器状态</button>
+    <button onclick="retryAllPorts()">尝试所有端口</button>
+    <div id="result" class="status"></div>
+    <div id="connectionInfo"></div>
+
+    <script>
+        const ports = [9000, 3000, 8080, 5000];
+        let currentPortIndex = 0;
+        let currentPort = ports[currentPortIndex];
+
+        function updateConnectionInfo() {
+            const info = document.getElementById('connectionInfo');
+            info.innerHTML = `
+                <h3>连接信息</h3>
+                <p>当前尝试端口: ${currentPort}</p>
+                <p>可用端口: ${ports.join(', ')}</p>
+                <p>尝试次数: ${currentPortIndex + 1}/${ports.length}</p>
+            `;
+        }
+
+        async function testConnection() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'status';
+            
+            try {
+                resultDiv.textContent = '正在连接...';
+                resultDiv.classList.add('warning');
+                
+                const response = await fetch(`http://localhost:${currentPort}/api/test`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                resultDiv.textContent = `连接成功: ${JSON.stringify(data)}`;
+                resultDiv.classList.remove('warning');
+                resultDiv.classList.add('success');
+            } catch (error) {
+                resultDiv.textContent = `连接失败: ${error.message}`;
+                resultDiv.classList.remove('warning');
+                resultDiv.classList.add('error');
+                console.error('连接错误:', error);
+            }
+            updateConnectionInfo();
+        }
+
+        async function checkHealth() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'status';
+            
+            try {
+                resultDiv.textContent = '检查服务器状态...';
+                resultDiv.classList.add('warning');
+                
+                const response = await fetch(`http://localhost:${currentPort}/health`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                resultDiv.textContent = `服务器状态: ${JSON.stringify(data)}`;
+                resultDiv.classList.remove('warning');
+                resultDiv.classList.add('success');
+            } catch (error) {
+                resultDiv.textContent = `检查失败: ${error.message}`;
+                resultDiv.classList.remove('warning');
+                resultDiv.classList.add('error');
+                console.error('健康检查错误:', error);
+            }
+            updateConnectionInfo();
+        }
+
+        async function tryNextPort() {
+            currentPortIndex++;
+            if (currentPortIndex < ports.length) {
+                currentPort = ports[currentPortIndex];
+                await testConnection();
+            } else {
+                const resultDiv = document.getElementById('result');
+                resultDiv.textContent = '所有端口都无法连接，请检查服务器是否正在运行';
+                resultDiv.className = 'status error';
+            }
+            updateConnectionInfo();
+        }
+
+        async function retryAllPorts() {
+            currentPortIndex = 0;
+            currentPort = ports[currentPortIndex];
+            await testConnection();
+        }
+
+        // 自动重试机制
+        async function autoRetry() {
+            try {
+                await testConnection();
+            } catch (error) {
+                console.error('自动重试错误:', error);
+                await tryNextPort();
+            }
+        }
+
+        // 页面加载完成后自动开始连接测试
+        window.onload = () => {
+            updateConnectionInfo();
+            autoRetry();
+        };
+    </script>
+</body>
+</html> 

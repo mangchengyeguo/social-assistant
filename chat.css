@@ -71,86 +71,118 @@ h1 {
 
 .contacts-grid {
     flex: 1;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 1.5rem;
+    padding: 15px;
     max-height: calc(100vh - 150px);
     overflow-y: auto;
-    padding-right: 1rem;
+}
+
+.cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.group-header {
+    background: #f5f5f5;
+    padding: 8px 15px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #666;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    margin: 10px 0;
+    border-radius: 4px;
 }
 
 .contact-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
     cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    position: relative;
-    height: 200px;
 }
 
 .contact-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .contact-avatar {
-    width: 80px;
-    height: 80px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
+    margin-bottom: 8px;
     object-fit: cover;
-    margin-bottom: 1rem;
 }
 
 .contact-name {
-    font-size: 1.2rem;
-    color: #2c3e50;
-    margin-bottom: 0.5rem;
+    font-size: 16px;
+    font-weight: 500;
+    margin: 4px 0;
+    color: #333;
     text-align: center;
-    width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .contact-info {
+    font-size: 14px;
     color: #666;
-    font-size: 0.9rem;
+    margin-top: 4px;
     text-align: center;
 }
 
-.alphabet-nav {
-    width: 30px;
-    position: sticky;
-    top: 2rem;
-    right: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    padding: 1rem 0;
-}
-
-.letter-link {
-    width: 30px;
-    height: 30px;
+.delete-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    border: none;
+    background: rgba(0, 0, 0, 0.1);
+    color: #666;
+    font-size: 16px;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #2c3e50;
-    text-decoration: none;
-    font-size: 0.9rem;
-    border-radius: 50%;
-    transition: all 0.3s ease;
+    opacity: 0;
+    transition: opacity 0.2s;
 }
 
-.letter-link:hover,
-.letter-link.active {
-    background: #2c3e50;
-    color: white;
+.contact-card:hover .delete-btn {
+    opacity: 1;
+}
+
+.delete-btn:hover {
+    background: rgba(0, 0, 0, 0.2);
+    color: #333;
+}
+
+@media (max-width: 768px) {
+    .contacts-grid {
+        padding: 10px;
+    }
+    
+    .cards-container {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+    }
+    
+    .contact-avatar {
+        width: 50px;
+        height: 50px;
+    }
+}
+
+.alphabet-nav {
+    display: none;
 }
 
 /* 模态框样式 */
@@ -302,25 +334,4 @@ h1 {
     .alphabet-nav {
         display: none;
     }
-}
-
-.delete-btn {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #e74c3c;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.3s ease;
-}
-
-.delete-btn:hover {
-    background: #c0392b;
 } 

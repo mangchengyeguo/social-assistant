@@ -2,7 +2,7 @@
 console.log('profile.js 开始加载...');
 
 // 服务器配置
-const API_BASE_URL = API_CONFIG.BASE_URL;
+const API_BASE_URL = 'http://localhost:5002';
 
 // 添加全局错误处理
 window.onerror = function(msg, url, lineNo, columnNo, error) {
@@ -28,1137 +28,1052 @@ window.addEventListener('unhandledrejection', function(event) {
     }
 });
 
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('正在初始化页面...');
-    try {
-        const isServerConnected = await checkServerConnection();
-        if (!isServerConnected) {
-            alert('无法连接到后端服务器，请确保服务器已启动');
-            return;
-        }
-        
-        // 初始化页面
-        initializePage();
-        
-    } catch (error) {
-        console.error('初始化失败:', error);
-        alert('页面初始化失败，请刷新重试');
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    initializeUI();
+    setupEventListeners();
 });
 
-// 页面初始化函数
-function initializePage() {
-    // 检查必要的DOM元素是否存在
-    const requiredElements = {
-        'edit-profile-btn': document.querySelector('.edit-profile-btn'),
-        'edit-modal': document.getElementById('edit-modal'),
-        'profile-form': document.getElementById('profile-form'),
-        'avatar-container': document.querySelector('.avatar-container'),
-        'avatar-img': document.querySelector('.avatar-container img'),
-        'chat-modal': document.getElementById('chat-modal'),
-        'chat-messages': document.querySelector('.chat-messages'),
-        'message-input': document.querySelector('.message-input'),
-        'send-btn': document.querySelector('.send-btn')
-    };
-
-    // 检查并报告缺失的元素
-    const missingElements = [];
-    for (const [name, element] of Object.entries(requiredElements)) {
-        if (!element) {
-            missingElements.push(name);
-            console.error(`缺失必要的DOM元素: ${name}`);
-        }
-    }
-
-    if (missingElements.length > 0) {
-        throw new Error(`页面缺失必要的DOM元素: ${missingElements.join(', ')}`);
-    }
-
-    // DOM元素
-    const editProfileBtn = document.querySelector('.edit-profile-btn');
-    console.log('编辑按钮:', editProfileBtn);
+// 初始化UI
+function initializeUI() {
+    console.log('初始化UI...');
     
-    const editModal = document.getElementById('edit-modal');
-    console.log('编辑模态框:', editModal);
+    // 隐藏分析相关的元素
+    document.querySelector('.analysis-progress').classList.remove('active');
+    document.querySelector('.chat-container').classList.remove('active');
+    document.querySelector('.result-confirmation').classList.remove('active');
     
-    const profileForm = document.getElementById('profile-form');
-    const cancelBtn = editModal ? editModal.querySelector('.cancel-btn') : null;
-    const avatarContainer = document.querySelector('.avatar-container');
-    const avatarImg = document.querySelector('.avatar-container img');
-    const startChatBtn = document.querySelector('.start-chat-btn');
-    const chatModal = document.getElementById('chat-modal');
-    const chatMessages = document.querySelector('.chat-messages');
+    // 显示开始分析按钮
+    const startButton = document.querySelector('.start-analysis-btn');
+    if (startButton) {
+        startButton.style.display = 'block';
+    }
+    
+    // 加载用户信息
+    loadUserProfile();
+}
+
+// 设置事件监听器
+function setupEventListeners() {
+    const startButton = document.querySelector('.start-analysis-btn');
+    const sendButton = document.querySelector('.send-btn');
     const messageInput = document.querySelector('.message-input');
-    const sendBtn = document.querySelector('.send-btn');
-    const closeChatBtn = document.querySelector('.close-chat-btn');
+    const confirmButton = document.querySelector('.confirm-btn');
+    const modifyButton = document.querySelector('.modify-btn');
+    const reanalyzeButton = document.querySelector('.reanalyze-btn');
 
-    // 文件上传分析功能
-    const chatUpload = document.getElementById('chat-upload');
-    const momentsUpload = document.getElementById('moments-upload');
-    const traitChart = document.querySelector('.trait-chart');
-    const tagsCloud = document.querySelector('.tags-cloud');
-    const suggestionList = document.querySelector('.suggestion-list');
+    startButton.addEventListener('click', startAnalysis);
+    sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', handleEnterKey);
+    confirmButton.addEventListener('click', confirmResults);
+    modifyButton.addEventListener('click', modifyResults);
+    reanalyzeButton.addEventListener('click', startAnalysis);
+}
 
-    // 社交应急助手选项数据
-    const emergencyOptions = {
-        sceneTypes: [
-            "社交聚会",
-            "工作会议",
-            "家庭聚餐",
-            "约会场合",
-            "学术交流",
-            "商务谈判",
-            "朋友聚会",
-            "陌生人社交",
-            "网络社交",
-            "公共演讲",
-            "团队协作",
-            "面试场合",
-            "社交媒体互动",
-            "文化交流",
-            "邻里交往"
+// 加载用户信息
+function loadUserProfile() {
+    const profile = JSON.parse(localStorage.getItem('userProfile')) || {};
+    document.getElementById('profile-name').textContent = profile.name || '未设置';
+    document.getElementById('profile-gender').textContent = profile.gender || '未设置';
+    document.getElementById('profile-age').textContent = profile.age || '未设置';
+    document.getElementById('profile-mbti').textContent = profile.mbti || '未设置';
+    
+    // 加载头像
+    const savedAvatar = localStorage.getItem('userAvatar');
+    if (savedAvatar) {
+        document.getElementById('profile-avatar').src = savedAvatar;
+    }
+}
+
+// 语言风格分析配置
+const styleAnalysis = {
+    currentStage: 0,
+    totalProgress: 0,
+    stages: [
+        { id: '开场寒暄', weight: 0.15 },
+        { id: '日常话题', weight: 0.2 },
+        { id: '观点探讨', weight: 0.2 },
+        { id: '情感互动', weight: 0.2 },
+        { id: '压力情境', weight: 0.15 },
+        { id: '总结反馈', weight: 0.1 }
+    ],
+    quickChoices: [
+        {
+            question: "遇到好事，你更喜欢用什么表达？",
+            options: [
+                "哇！太棒了！",
+                "不错不错",
+                "还可以吧",
+                "其他（请输入）"
+            ],
+            type: "single"
+        },
+        {
+            question: "跟朋友聊天，你最常用的标点符号是？",
+            options: [
+                "！！！",
+                "～",
+                "。",
+                "...",
+                "其他（请输入）"
+            ],
+            type: "multiple"
+        },
+        {
+            question: "你更喜欢哪种表达方式？",
+            options: [
+                "开门见山，直接表达",
+                "徐徐道来，循序渐进",
+                "先抛出问题，引发思考",
+                "其他（请输入）"
+            ],
+            type: "single"
+        },
+        {
+            question: "在群聊中，你更倾向于：",
+            options: [
+                "主动带动话题",
+                "积极回应他人",
+                "选择性参与感兴趣的话题",
+                "主要是潜水，偶尔发言"
+            ],
+            type: "single"
+        },
+        {
+            question: "描述事情时，你习惯：",
+            options: [
+                "重点突出，简明扼要",
+                "细节丰富，生动形象",
+                "逻辑清晰，层次分明",
+                "随性自然，想到哪说到哪"
+            ],
+            type: "single"
+        }
+    ],
+    scenarios: {
+        '日常话题': [
+            {
+                context: "朋友心情不好时",
+                options: [
+                    "直接问'怎么啦？'",
+                    "先聊点轻松的话题",
+                    "分享自己的经历",
+                    "其他方式（请描述）"
+                ],
+                type: "interactive"
+            },
+            {
+                context: "收到好消息时",
+                options: [
+                    "立即分享并表达喜悦",
+                    "等待合适时机再说",
+                    "选择特定的人分享",
+                    "自己默默高兴"
+                ],
+                type: "interactive"
+            }
         ],
-        relationships: [
-            "同事",
-            "上级领导",
-            "下属",
-            "朋友",
-            "家人",
-            "恋人",
-            "陌生人",
-            "客户",
-            "合作伙伴",
-            "老师",
-            "学生",
-            "邻居",
-            "网友",
-            "服务人员",
-            "社交圈新人"
+        '观点探讨': [
+            {
+                role: "对科技创新感兴趣的新同事",
+                topic: "AI技术对未来工作的影响",
+                questions: [
+                    "你觉得AI会取代人类的工作吗？",
+                    "我们应该如何应对AI带来的变革？",
+                    "你认为未来最重要的职场技能是什么？"
+                ]
+            },
+            {
+                role: "环保主题活动的组织者",
+                topic: "日常生活中的环保行动",
+                questions: [
+                    "你平时会注意环保吗？",
+                    "你认为个人行为能影响环境吗？",
+                    "如何推广环保理念？"
+                ]
+            }
         ],
-        roles: [
-            "倾听者",
-            "建议者",
-            "协调者",
-            "主导者",
-            "支持者",
-            "观察者",
-            "调解者",
-            "组织者",
-            "参与者",
-            "引导者",
-            "学习者",
-            "分享者",
-            "决策者",
-            "创新者",
-            "关系维护者"
-        ],
-        coreNeeds: [
-            "化解冲突",
-            "建立信任",
-            "表达诉求",
-            "获取认同",
-            "维护关系",
-            "寻求支持",
-            "解决误会",
-            "增进理解",
-            "改善沟通",
-            "处理压力",
-            "建立边界",
-            "寻求合作",
-            "表达感谢",
-            "处理拒绝",
-            "寻求反馈"
+        '情感互动': {
+            story: "前几天我遇到一个情况：一位同事总是在会议上打断别人发言，但说的内容又确实有价值。大家都觉得很困扰，但又不好直接指出...",
+            prompts: [
+                "你遇到过类似的情况吗？",
+                "你会怎么处理这种情况？",
+                "如何既保持友好又能解决问题？"
+            ]
+        },
+        '压力情境': [
+            {
+                scenario: "你的观点和大多数人不一样时",
+                context: "在一次团队讨论中，大家都倾向于方案A，但你认为方案B更好",
+                prompts: [
+                    "你会如何表达自己的不同意见？",
+                    "如果遭到反对，你会怎么回应？",
+                    "什么情况下你会选择妥协？"
+                ]
+            },
+            {
+                scenario: "需要拒绝他人请求时",
+                context: "一个关系还不错的同事请你周末帮忙搬家，但你已经有其他安排了",
+                prompts: [
+                    "你会如何委婉地拒绝？",
+                    "如果对方继续坚持，你会怎么说？"
+                ]
+            }
         ]
-    };
-
-    // 添加全局变量存储特征数据
-    let traitHistory = new Map(); // 存储历史特征数据
-    let traitRealtime = new Map(); // 存储实时特征数据
-
-    // 添加一个变量来跟踪已使用的场景
-    let usedSceneIndexes = new Set();
-
-    // 初始化下拉框并支持手动输入
-    function initializeEmergencySelects() {
-        const selects = {
-            sceneType: document.querySelector('select[name="sceneType"]'),
-            relationship: document.querySelector('select[name="relationship"]'),
-            role: document.querySelector('select[name="role"]'),
-            coreNeed: document.querySelector('select[name="coreNeed"]')
-        };
-
-        // 为每个下拉框添加选项和功能
-        Object.entries(selects).forEach(([key, select]) => {
-            if (select) {
-                // 添加选项
-                const options = emergencyOptions[key + 's']; // 注意复数形式
-                select.innerHTML = `
-                    <option value="">请选择${select.previousElementSibling?.textContent || ''}</option>
-                    ${options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
-                    <option value="custom">自定义...</option>
-                `;
-
-                // 添加事件监听
-                select.addEventListener('change', function() {
-                    if (this.value === 'custom') {
-                        const customValue = prompt('请输入自定义选项：');
-                        if (customValue && customValue.trim()) {
-                            // 添加新选项
-                            const newOption = new Option(customValue, customValue, true, true);
-                            this.add(newOption, this.options[this.options.length - 1]);
-                            this.value = customValue;
-                        } else {
-                            this.value = ''; // 如果用户取消，重置为默认选项
+    },
+    results: {
+        sentence: '',
+        rhythm: '',
+        punctuation: '',
+        habit: '',
+        organization: ''
+    },
+    userPreferences: {
+        expressionStyle: '',
+        punctuationHabit: [],
+        communicationPattern: '',
+        socialStyle: '',
+        descriptionPreference: ''
+    },
+    dialogueScenarios: {
+        scenes: [
+            {
+                title: "职场沟通",
+                context: "你最近在带领一个重要项目，需要与团队成员和其他部门协调",
+                role: "项目负责人",
+                rounds: [
+                    {
+                        ai: "最近我们的项目进度似乎有点延迟，你觉得主要的原因是什么？我们该如何调整？",
+                        followUps: {
+                            analysis: "你提到{point}这个问题很关键，能详细说说这个问题是如何影响项目进度的吗？",
+                            solution: "关于{point}的解决方案很有见地，你准备如何具体实施？",
+                            team: "你提到需要{point}，如何确保团队每个成员都能理解并配合这个调整？"
+                        }
+                    },
+                    {
+                        ai: "有两个部门对项目的技术方案存在分歧，作为项目负责人，你会如何协调？",
+                        followUps: {
+                            approach: "你选择先{point}的方式很专业，能说说为什么会这样考虑吗？",
+                            balance: "在平衡{point}时，你会特别注意哪些细节？",
+                            communication: "你提到要通过{point}来达成共识，能分享一下具体的沟通技巧吗？"
+                        }
+                    },
+                    {
+                        ai: "客户突然要求增加新功能，但这可能影响原定的交付时间，你会如何处理？",
+                        followUps: {
+                            negotiate: "你提出的{point}建议很有建设性，如何向客户解释这个方案？",
+                            priority: "关于{point}的优先级安排很合理，能详细说说评估标准吗？",
+                            timeline: "你说到要{point}来调整时间线，具体要考虑哪些因素？"
+                        }
+                    },
+                    {
+                        ai: "团队中有成员经常加班但产出效率不高，你会怎么帮助他改善？",
+                        followUps: {
+                            mentor: "你提到要通过{point}来提升效率，能分享一些具体的指导方法吗？",
+                            support: "关于{point}的支持方式很贴心，如何确保不影响他的积极性？",
+                            balance: "在平衡{point}时，你会如何避免可能的负面影响？"
+                        }
+                    },
+                    {
+                        ai: "项目即将结项，你打算如何总结经验教训并激励团队？",
+                        followUps: {
+                            review: "你提到要总结{point}这些方面，能具体说说每个点的启发吗？",
+                            celebrate: "关于{point}的庆祝方式很有意思，如何让每个成员都感受到认可？",
+                            future: "对于{point}的规划很有前瞻性，能详细说说你的想法吗？"
                         }
                     }
-                });
-
-                // 支持输入搜索
-                select.addEventListener('keyup', function(e) {
-                    const input = this.value.toLowerCase();
-                    const matchingOption = options.find(opt => 
-                        opt.toLowerCase().includes(input)
-                    );
-                    if (matchingOption) {
-                        this.value = matchingOption;
-                    }
-                });
-            }
-        });
-    }
-
-    // 显示编辑模态框
-    editProfileBtn.addEventListener('click', () => {
-        console.log('打开模态框');
-        editModal.classList.add('active');
-        // 填充现有数据
-        const profile = JSON.parse(localStorage.getItem('userProfile')) || {};
-        document.getElementById('edit-name').value = profile.name || '';
-        document.getElementById('edit-age').value = profile.age || '';
-        document.getElementById('edit-occupation').value = profile.occupation || '';
-        document.getElementById('edit-mbti').value = profile.mbti || '';
-    });
-
-    // 关闭模态框函数
-    const closeModal = () => {
-        console.log('关闭模态框');
-        if (editModal) {
-            editModal.classList.remove('active');
-        }
-    };
-
-    // 注册取消按钮事件
-    if (cancelBtn) {
-        console.log('注册取消按钮事件');
-        cancelBtn.addEventListener('click', closeModal);
-    } else {
-        console.error('未找到取消按钮，将使用备用关闭方法');
-        // 备用关闭方法：为所有具有 close-modal 类的元素添加关闭事件
-        document.querySelectorAll('.close-modal').forEach(btn => {
-            btn.addEventListener('click', closeModal);
-        });
-    }
-
-    // 点击模态框外部关闭
-    editModal.addEventListener('click', (e) => {
-        if (e.target === editModal) {
-            console.log('点击外部关闭模态框');
-            closeModal();
-        }
-    });
-
-    // 处理头像上传
-    if (avatarContainer && avatarImg) {
-        avatarContainer.addEventListener('click', () => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        avatarImg.src = e.target.result;
-                        localStorage.setItem('userAvatar', e.target.result);
-                    };
-                    reader.readAsDataURL(file);
-                }
-            };
-            input.click();
-        });
-    }
-
-    // 文件上传和分析相关功能
-    const fileUpload = document.getElementById('file-upload');
-    const fileList = document.querySelector('.file-list');
-    const clearFilesBtn = document.querySelector('.clear-files-btn');
-    const textInput = document.querySelector('.text-input');
-    const analyzeBtn = document.querySelector('.analyze-btn');
-
-    // 处理文件上传
-    fileUpload.addEventListener('change', (e) => {
-        const files = e.target.files;
-        if (files.length > 0) {
-            fileList.innerHTML = '';
-            Array.from(files).forEach(file => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                fileItem.innerHTML = `
-                    <span>${file.name}</span>
-                    <span class="remove-file">×</span>
-                `;
-                
-                fileItem.querySelector('.remove-file').addEventListener('click', () => {
-                    fileItem.remove();
-                    if (fileList.children.length === 0) {
-                        clearFilesBtn.style.display = 'none';
-                    }
-                });
-                
-                fileList.appendChild(fileItem);
-            });
-            clearFilesBtn.style.display = 'inline-block';
-        }
-    });
-
-    // 清空文件选择
-    clearFilesBtn.addEventListener('click', () => {
-        fileList.innerHTML = '';
-        fileUpload.value = '';
-        clearFilesBtn.style.display = 'none';
-    });
-
-    // 全局变量存储分析结果
-    let globalAnalysisData = {
-        traits: [],
-        socialStyles: [],
-        suggestions: [],
-        feedbacks: {} // 存储用户反馈
-    };
-
-    // 从localStorage加载分析结果
-    function loadAnalysisResults() {
-        try {
-            const savedData = localStorage.getItem('analysisResults');
-            if (savedData) {
-                globalAnalysisData = JSON.parse(savedData);
-                updateAnalysisResults(globalAnalysisData);
-            }
-        } catch (error) {
-            console.error('加载分析结果失败:', error);
-        }
-    }
-
-    // 保存分析结果到localStorage
-    function saveAnalysisResults() {
-        try {
-            localStorage.setItem('analysisResults', JSON.stringify(globalAnalysisData));
-        } catch (error) {
-            console.error('保存分析结果失败:', error);
-        }
-    }
-
-    // 更新分析按钮的处理函数
-    analyzeBtn.addEventListener('click', async () => {
-        const files = fileUpload.files;
-        const text = textInput.value.trim();
-        
-        if (!files.length && !text) {
-            alert('请上传文件或输入文字内容');
-            return;
-        }
-
-        try {
-            analyzeBtn.disabled = true;
-            analyzeBtn.textContent = '分析中...';
-            
-            let analysisContent = '';
-            
-            // 处理文本输入
-            if (text) {
-                analysisContent += `用户输入的文本：${text}\n`;
-            }
-
-            // 处理文件
-            if (files.length > 0) {
-                for (const file of files) {
-                    if (file.type.startsWith('text/')) {
-                        const content = await file.text();
-                        analysisContent += `文件内容：${content}\n`;
-                    } else if (file.type.startsWith('image/')) {
-                        analysisContent += `[图片文件：${file.name}]\n`;
-                    }
-                }
-            }
-
-            const response = await fetch(API_BASE_URL + '/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    messages: [{
-                        role: "system",
-                        content: `作为一位专业的社交心理分析师，请分析以下内容并生成详细的社交性格报告。内容：${analysisContent}
-
-请按照以下JSON格式返回分析结果：
-{
-    "traits": [
-        {"name": "社交倾向", "value": 85, "description": "具体描述..."},
-        {"name": "表达能力", "value": 75, "description": "具体描述..."},
-        {"name": "同理心", "value": 80, "description": "具体描述..."},
-        {"name": "领导力", "value": 70, "description": "具体描述..."},
-        {"name": "适应性", "value": 90, "description": "具体描述..."}
-    ],
-    "socialStyles": [
-        {"tag": "善于沟通", "confidence": 0.85},
-        {"tag": "乐于分享", "confidence": 0.75},
-        {"tag": "积极主动", "confidence": 0.80},
-        {"tag": "富有同理心", "confidence": 0.70},
-        {"tag": "善于倾听", "confidence": 0.90}
-    ],
-    "suggestions": [
-        {"type": "优势发挥", "content": "具体建议..."},
-        {"type": "改进方向", "content": "具体建议..."},
-        {"type": "发展建议", "content": "具体建议..."}
-    ],
-    "languageStyle": {
-        "formality": 0.8,
-        "emotionality": 0.6,
-        "directness": 0.7,
-        "complexity": 0.65
-    }
-}`
-                    }]
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('分析请求失败');
-            }
-
-            const result = await response.json();
-            const content = result.choices[0].message.content;
-            const jsonMatch = content.match(/\{[\s\S]*\}/);
-            
-            if (!jsonMatch) {
-                throw new Error('无法解析分析结果');
-            }
-            
-            const analysisResult = JSON.parse(jsonMatch[0]);
-            
-            // 更新全局数据
-            globalAnalysisData = {
-                ...globalAnalysisData,
-                ...analysisResult,
-                source: 'fileAnalysis'
-            };
-            
-            // 更新显示
-            updateAnalysisResults(globalAnalysisData);
-            
-        } catch (error) {
-            console.error('分析错误:', error);
-            alert('分析过程中出现错误，请重试');
-        } finally {
-            analyzeBtn.disabled = false;
-            analyzeBtn.textContent = '开始分析';
-        }
-    });
-
-    // 更新分析结果显示
-    function updateAnalysisResults(data) {
-        try {
-            console.log('接收到的分析数据:', data);
-            
-            // 更新全局数据
-            if (data.traits) {
-            if (data.source === 'fileAnalysis') {
-                    // 来自历史消息分析的特征
-                    data.traits.forEach(trait => {
-                        const traitName = typeof trait === 'object' ? trait.name : trait;
-                        traitHistory.set(traitName, {
-                            name: traitName,
-                            value: typeof trait === 'object' ? trait.value : 80
-                        });
-                    });
-                } else if (data.source === 'aiAnalysis') {
-                    // 来自实时场景互动的特征
-                    data.traits.forEach(trait => {
-                        const traitName = typeof trait === 'object' ? trait.name : trait;
-                        traitRealtime.set(traitName, {
-                            name: traitName,
-                            value: typeof trait === 'object' ? trait.value : 80
-                        });
-                    });
-                }
-                globalAnalysisData.traits = data.traits;
-            }
-            if (data.socialStyles) globalAnalysisData.socialStyles = data.socialStyles;
-            if (data.suggestions) globalAnalysisData.suggestions = data.suggestions;
-            if (data.languageStyle) globalAnalysisData.languageStyle = data.languageStyle;
-            
-            // 保留现有的反馈数据
-            globalAnalysisData.feedbacks = { ...globalAnalysisData.feedbacks, ...(data.feedbacks || {}) };
-            
-            // 保存更新后的数据
-            saveAnalysisResults();
-            
-            // 更新性格特征词云图
-            const traitChart = document.querySelector('.trait-chart');
-            if (traitChart) {
-                const allTraits = new Map();
-                
-                // 合并历史和实时特征
-                traitHistory.forEach((trait, name) => {
-                    allTraits.set(name, {
-                        name: name,
-                        value: trait.value,
-                        source: 'history'
-                    });
-                });
-                
-                traitRealtime.forEach((trait, name) => {
-                    if (allTraits.has(name)) {
-                        // 如果特征在两边都存在，标记为both
-                        allTraits.get(name).source = 'both';
-                                } else {
-                        allTraits.set(name, {
-                            name: name,
-                            value: trait.value,
-                            source: 'realtime'
-                        });
-                    }
-                });
-                
-                traitChart.innerHTML = `
-                    <div class="word-cloud-container">
-                        <div class="word-cloud">
-                            ${Array.from(allTraits.values()).map(trait => {
-                                const size = trait.value;
-                                const fontSize = Math.max(14, Math.min(30, size / 3));
-                                let color;
-                                switch(trait.source) {
-                                    case 'history':
-                                        color = '#4A90E2'; // 蓝色
-                                        break;
-                                    case 'realtime':
-                                        color = '#2ECC71'; // 绿色
-                                        break;
-                                    case 'both':
-                                        color = 'linear-gradient(45deg, #4A90E2, #2ECC71)'; // 渐变色
-                                        break;
-                                }
-                                return `<span class="trait-word" style="font-size: ${fontSize}px; ${trait.source === 'both' ? 'background-image:' : 'color:'} ${color}">
-                                    ${trait.name}
-                                </span>`;
-                            }).join('')}
-                        </div>
-                        <div class="word-cloud-legend">
-                            <div class="legend-item">
-                                <span class="legend-color" style="background-color: #4A90E2"></span>
-                                <span class="legend-text">历史消息分析</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-color" style="background-color: #2ECC71"></span>
-                                <span class="legend-text">实时场景互动</span>
-                            </div>
-                            <div class="legend-item">
-                                <span class="legend-color" style="background: linear-gradient(45deg, #4A90E2, #2ECC71)"></span>
-                                <span class="legend-text">两者共有</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // 更新语言习惯展示
-            const tagsCloud = document.querySelector('.tags-cloud');
-            if (tagsCloud && data.languageStyle) {
-                const languageHabits = [
-                    {tag: "偏好短句", confidence: data.languageStyle.complexity < 0.5 ? 0.9 : 0.3},
-                    {tag: "多用句号", confidence: data.languageStyle.formality > 0.7 ? 0.85 : 0.4},
-                    {tag: "感叹号频繁", confidence: data.languageStyle.emotionality > 0.7 ? 0.8 : 0.3},
-                    {tag: "简洁表达", confidence: data.languageStyle.complexity < 0.4 ? 0.9 : 0.4},
-                    {tag: "口语化", confidence: data.languageStyle.formality < 0.3 ? 0.85 : 0.3},
-                    {tag: "表情符号多", confidence: data.languageStyle.emotionality > 0.8 ? 0.9 : 0.3},
-                    {tag: "逗号连接", confidence: data.languageStyle.complexity > 0.7 ? 0.85 : 0.4},
-                    {tag: "精准用词", confidence: data.languageStyle.formality > 0.8 ? 0.9 : 0.4}
-                ];
-
-                tagsCloud.innerHTML = `
-                    <div class="language-habits-grid">
-                        ${languageHabits.map(habit => {
-                            const isHidden = globalAnalysisData.feedbacks[habit.tag] === 'dislike';
-                            return isHidden ? '' : `
-                    <div class="social-tag-container">
-                                    <div class="social-tag-wrapper">
-                                        <span class="social-tag" data-tag="${habit.tag}">
-                                            ${habit.tag}
-                                            <span class="confidence">${Math.round(habit.confidence * 100)}%</span>
-                        </span>
-                        <div class="tag-feedback">
-                                            <button class="feedback-btn like ${globalAnalysisData.feedbacks[habit.tag] === 'like' ? 'active' : ''}" 
-                                                    onclick="handleTagFeedback('${habit.tag}', 'like')">
-                                👍 是我
-                            </button>
-                                            <button class="feedback-btn dislike ${globalAnalysisData.feedbacks[habit.tag] === 'dislike' ? 'active' : ''}" 
-                                                    onclick="handleTagFeedback('${habit.tag}', 'dislike')">
-                                👎 不像我
-                            </button>
-                        </div>
-                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                `;
-            }
-
-            // 更新建议列表
-            const suggestionList = document.querySelector('.suggestion-list');
-            if (suggestionList && globalAnalysisData.suggestions) {
-                suggestionList.innerHTML = globalAnalysisData.suggestions.map(suggestion => `
-                    <li class="suggestion-item">
-                        <span class="suggestion-type">${typeof suggestion === 'string' ? '建议' : suggestion.type}</span>
-                        <p class="suggestion-content">${typeof suggestion === 'string' ? suggestion : suggestion.content}</p>
-                    </li>
-                `).join('');
-            }
-
-            // 更新语言风格分析
-            const languageStyle = document.querySelector('.language-style');
-            if (languageStyle && globalAnalysisData.languageStyle) {
-                languageStyle.innerHTML = `
-                    <h3>语言风格分析</h3>
-                    <div class="style-metrics">
-                        <div class="style-metric">
-                            <span>正式程度</span>
-                            <div class="metric-bar">
-                                <div class="metric-value" style="width: ${globalAnalysisData.languageStyle.formality * 100}%"></div>
-                            </div>
-                        </div>
-                        <div class="style-metric">
-                            <span>情感表达</span>
-                            <div class="metric-bar">
-                                <div class="metric-value" style="width: ${globalAnalysisData.languageStyle.emotionality * 100}%"></div>
-                            </div>
-                        </div>
-                        <div class="style-metric">
-                            <span>直接程度</span>
-                            <div class="metric-bar">
-                                <div class="metric-value" style="width: ${globalAnalysisData.languageStyle.directness * 100}%"></div>
-                            </div>
-                        </div>
-                        <div class="style-metric">
-                            <span>表达复杂度</span>
-                            <div class="metric-bar">
-                                <div class="metric-value" style="width: ${globalAnalysisData.languageStyle.complexity * 100}%"></div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-        } catch (error) {
-            console.error('更新分析结果时出错:', error);
-            alert('更新分析结果时出现错误，请重试');
-        }
-    }
-
-    // 处理标签反馈
-    window.handleTagFeedback = function(tag, type) {
-        const tagElement = document.querySelector(`[data-tag="${tag}"]`).closest('.social-tag-container');
-        
-        if (type === 'dislike') {
-            // 如果点击"不像我"，隐藏整个标签容器
-            tagElement.style.display = 'none';
-            delete globalAnalysisData.feedbacks[tag];
-        } else if (type === 'like') {
-            // 如果点击"是我了"，保存标签
-        globalAnalysisData.feedbacks[tag] = type;
-        }
-        
-        // 保存更新后的反馈数据
-        saveAnalysisResults();
-        
-        // 可以在这里发送反馈到服务器
-        fetch(API_BASE_URL + '/api/feedback', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
+                ]
             },
-            body: JSON.stringify({
-                tag: tag,
-                feedback: type
-            })
-        }).catch(console.error);
-    };
-
-    // 注册文件上传事件
-    if (chatUpload) {
-        chatUpload.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                handleFileUpload(file, 'chat');
+            {
+                title: "生活压力",
+                context: "你正在经历工作与生活的平衡挑战，需要调整和规划",
+                role: "倾诉者",
+                rounds: [
+                    {
+                        ai: "最近感觉工作压力很大，经常带回家，影响到生活质量，你是怎么处理这种情况的？",
+                        followUps: {
+                            method: "你提到通过{point}来缓解压力，能具体说说这个方法是怎么帮助你的吗？",
+                            balance: "关于{point}的平衡方式很独特，你是如何坚持下来的？",
+                            effect: "这种{point}的改变给你带来了什么具体的变化？"
+                        }
+                    },
+                    {
+                        ai: "有时候会觉得生活很单调，每天都是工作-家庭两点一线，你会怎么调剂生活？",
+                        followUps: {
+                            hobby: "你提到{point}这个兴趣爱好很有趣，能分享一些具体的经历吗？",
+                            social: "通过{point}来扩展社交圈子的想法很好，你是怎么开始的？",
+                            growth: "在{point}的过程中，你有什么特别的收获吗？"
+                        }
+                    },
+                    {
+                        ai: "面对家人对工作时间的抱怨，你会如何沟通和改善这个问题？",
+                        followUps: {
+                            communicate: "你选择用{point}的方式来沟通很智慧，能分享更多细节吗？",
+                            arrange: "关于{point}的时间安排很有创意，是如何想到的？",
+                            quality: "你提到要注重{point}，具体是通过什么方式实现的？"
+                        }
+                    },
+                    {
+                        ai: "经常熬夜工作影响了身体状况，你有什么好的作息调整建议吗？",
+                        followUps: {
+                            health: "你提到{point}对健康很重要，能分享一下具体的作息安排吗？",
+                            habit: "养成{point}这个习惯确实不容易，你是怎么克服困难的？",
+                            benefit: "实践这些改变后，你感受到了哪些明显的好处？"
+                        }
+                    },
+                    {
+                        ai: "面对职业发展和个人生活的选择，你是如何做决定的？",
+                        followUps: {
+                            value: "你提到{point}这个价值观很重要，是什么经历让你有这样的认识？",
+                            choice: "在{point}的选择上，你考虑了哪些关键因素？",
+                            plan: "对于{point}的规划很清晰，能详细说说未来的目标吗？"
+                        }
+                    }
+                ]
+            },
+            {
+                title: "社交网络",
+                context: "探讨在社交媒体时代如何建立和维护人际关系",
+                role: "社交达人",
+                rounds: [
+                    {
+                        ai: "现在很多人都在社交媒体上展示生活，你觉得这种分享方式会影响真实的人际关系吗？",
+                        followUps: {
+                            opinion: "你对{point}的观点很有深度，能举个具体的例子吗？",
+                            experience: "你提到{point}的经历很有趣，能详细说说当时的情况吗？",
+                            balance: "在{point}的平衡上，你是如何把握的？"
+                        }
+                    },
+                    {
+                        ai: "在社交媒体上经常看到朋友的生活，有时会产生焦虑感，你会怎么调适这种心理？",
+                        followUps: {
+                            mindset: "你说到要{point}这种心态很健康，是如何培养的？",
+                            focus: "关注{point}确实很重要，你是怎么做到不被外界干扰的？",
+                            growth: "通过{point}来成长的方式很棒，能分享一些具体的改变吗？"
+                        }
+                    },
+                    {
+                        ai: "如何在保持线上活跃的同时，也维护好线下的友谊关系？",
+                        followUps: {
+                            method: "你通过{point}来维系友谊的方式很有效，能详细说说吗？",
+                            time: "在{point}的时间分配上，你是如何安排的？",
+                            quality: "提升{point}的建议很实用，你是怎么实践的？"
+                        }
+                    },
+                    {
+                        ai: "遇到朋友在社交媒体上发布负面情绪，你会怎么回应和支持？",
+                        followUps: {
+                            support: "你选择{point}的方式来支持朋友很温暖，能分享更多细节吗？",
+                            care: "关于{point}的关心方式很贴心，是基于什么考虑？",
+                            follow: "后续通过{point}来跟进很重要，你一般会怎么做？"
+                        }
+                    },
+                    {
+                        ai: "如何在社交媒体上展现真实的自己，同时又保持适当的界限？",
+                        followUps: {
+                            authentic: "你提到要{point}来保持真实，这种平衡是怎么找到的？",
+                            boundary: "设置{point}的界限很必要，你是如何判断的？",
+                            share: "关于{point}的分享原则很好，能具体说说考虑因素吗？"
+                        }
+                    }
+                ]
+            },
+            {
+                title: "情感沟通",
+                context: "处理亲密关系中的情感表达和矛盾处理",
+                role: "感情顾问",
+                rounds: [
+                    {
+                        ai: "在亲密关系中，当对方情绪低落时，你会用什么方式去安慰和支持？",
+                        followUps: {
+                            approach: "你选择{point}的方式很温暖，能分享一个具体的例子吗？",
+                            reason: "为什么会想到用{point}这种方式？有什么特别的考虑吗？",
+                            effect: "这种方式带来了什么样的效果？对方是如何回应的？"
+                        }
+                    },
+                    {
+                        ai: "遇到意见分歧时，你是如何表达自己的想法，同时也倾听对方的声音？",
+                        followUps: {
+                            express: "你通过{point}来表达的方式很有智慧，能详细说说吗？",
+                            listen: "在{point}的过程中，你会特别注意什么？",
+                            resolve: "如何通过{point}来达成共识？能分享一些技巧吗？"
+                        }
+                    },
+                    {
+                        ai: "长期关系中可能会出现倦怠期，你会用什么方式来保持感情的新鲜感？",
+                        followUps: {
+                            maintain: "你提到{point}的方法很有创意，是如何想到的？",
+                            surprise: "关于{point}的小惊喜很贴心，能举些例子吗？",
+                            grow: "在{point}的过程中，你们是如何一起成长的？"
+                        }
+                    },
+                    {
+                        ai: "当对方需要独处空间时，你会如何理解和处理这种状况？",
+                        followUps: {
+                            understand: "你对{point}的理解很深刻，是什么让你有这样的认识？",
+                            space: "在给予{point}的同时，如何维持联系？",
+                            balance: "如何平衡{point}和亲密度？能分享一些经验吗？"
+                        }
+                    },
+                    {
+                        ai: "如何在忙碌的生活中，保持感情的温度和关注度？",
+                        followUps: {
+                            time: "你通过{point}来创造时间的方式很棒，能详细说说吗？",
+                            quality: "关于提升{point}的建议很实用，是如何执行的？",
+                            ritual: "建立{point}的仪式感很重要，你们有什么特别的习惯吗？"
+                        }
+                    }
+                ]
+            },
+            {
+                title: "兴趣发展",
+                context: "探讨如何在工作之余发展个人兴趣爱好",
+                role: "兴趣指导",
+                rounds: [
+                    {
+                        ai: "你是如何发现并培养自己的兴趣爱好的？能分享一下这个过程吗？",
+                        followUps: {
+                            discover: "通过{point}发现兴趣的经历很有趣，能详细说说吗？",
+                            develop: "在发展{point}的过程中，遇到过什么挑战？",
+                            benefit: "这个兴趣给你带来了哪些意想不到的收获？"
+                        }
+                    },
+                    {
+                        ai: "在工作繁忙的情况下，你是如何坚持兴趣爱好的？",
+                        followUps: {
+                            arrange: "你通过{point}来安排时间的方法很实用，能具体说说吗？",
+                            persist: "在坚持{point}的过程中，是什么让你没有放弃？",
+                            balance: "如何平衡{point}和其他生活重心？有什么心得？"
+                        }
+                    },
+                    {
+                        ai: "通过兴趣爱好认识了新朋友，你是如何发展和维护这些友谊的？",
+                        followUps: {
+                            connect: "通过{point}建立联系的方式很好，能分享更多细节吗？",
+                            share: "在{point}的分享过程中，有什么特别的经历？",
+                            grow: "这些友谊如何促进了你在兴趣上的进步？"
+                        }
+                    },
+                    {
+                        ai: "你的兴趣是否影响了你的生活或工作方式？能具体说说吗？",
+                        followUps: {
+                            impact: "你提到{point}带来的改变很有意思，能举个例子吗？",
+                            transfer: "将{point}的经验运用到其他领域的想法很棒，如何实践的？",
+                            value: "这些经历给你带来了什么新的认识？"
+                        }
+                    },
+                    {
+                        ai: "对于想要发展兴趣爱好但不知从何开始的人，你有什么建议？",
+                        followUps: {
+                            start: "从{point}开始的建议很实用，能详细说说原因吗？",
+                            explore: "关于{point}的探索方式很有启发，是基于什么经验？",
+                            encourage: "你是如何克服{point}的困难的？能分享一些经验吗？"
+                        }
+                    }
+                ]
+            },
+            {
+                title: "学习成长",
+                context: "讨论终身学习和个人成长的经验",
+                role: "学习顾问",
+                rounds: [
+                    {
+                        ai: "在工作后坚持学习新知识，你是如何保持学习动力的？",
+                        followUps: {
+                            motivation: "你通过{point}来保持动力的方式很特别，能详细说说吗？",
+                            method: "关于{point}的学习方法很有效，是如何发现的？",
+                            challenge: "在克服{point}的困难时，你是怎么做的？"
+                        }
+                    },
+                    {
+                        ai: "面对快速变化的技术和知识更新，你是如何选择学习方向的？",
+                        followUps: {
+                            choice: "你选择{point}作为方向的考虑很全面，能分享决策过程吗？",
+                            plan: "关于{point}的学习规划很系统，是如何制定的？",
+                            adapt: "在适应{point}的变化时，你用了什么策略？"
+                        }
+                    },
+                    {
+                        ai: "你是如何将学习到的知识转化为实际应用的？能分享一些经验吗？",
+                        followUps: {
+                            apply: "通过{point}来实践的方式很智慧，能具体说说吗？",
+                            integrate: "将{point}整合到工作中的过程很有趣，遇到过什么挑战？",
+                            result: "这种应用带来了什么具体的改变或收获？"
+                        }
+                    },
+                    {
+                        ai: "在学习过程中遇到瓶颈时，你会用什么方法来突破？",
+                        followUps: {
+                            break: "你通过{point}来突破瓶颈的方法很有创意，能详细说说吗？",
+                            support: "寻求{point}的支持很重要，你是如何找到资源的？",
+                            persist: "在坚持{point}的过程中，是什么让你没有放弃？"
+                        }
+                    },
+                    {
+                        ai: "你是如何评估学习效果，并根据反馈调整学习方式的？",
+                        followUps: {
+                            evaluate: "你通过{point}来评估的方法很系统，能分享更多细节吗？",
+                            adjust: "根据{point}来调整的过程很有启发，是如何决定的？",
+                            improve: "这些调整带来了什么样的提升？"
+                        }
+                    }
+                ]
+            },
+            {
+                title: "压力管理",
+                context: "探讨如何应对和管理生活中的各种压力",
+                role: "心理顾问",
+                rounds: [
+                    {
+                        ai: "当面对多重压力时，你会如何识别和处理最紧迫的问题？",
+                        followUps: {
+                            identify: "你通过{point}来分析问题的方法很清晰，能详细说说吗？",
+                            prioritize: "关于{point}的优先级排序很有条理，是基于什么考虑？",
+                            handle: "处理{point}的方式很有效，能分享具体步骤吗？"
+                        }
+                    },
+                    {
+                        ai: "工作压力可能会影响情绪和身体状态，你有什么好的调节方法吗？",
+                        followUps: {
+                            relax: "你提到的{point}放松方式很独特，能具体说说效果吗？",
+                            balance: "在保持{point}平衡的过程中，有什么特别的心得？",
+                            health: "关注{point}的健康方式很重要，你是如何坚持的？"
+                        }
+                    },
+                    {
+                        ai: "在压力大的时候，你会向谁倾诉？如何选择倾诉对象？",
+                        followUps: {
+                            share: "你选择{point}作为倾诉对象的原因很有趣，能详细说说吗？",
+                            trust: "建立{point}的信任关系很重要，是如何维护的？",
+                            support: "获得{point}的支持对你有什么帮助？"
+                        }
+                    },
+                    {
+                        ai: "你是否有过压力导致的消极经历？是如何走出来的？",
+                        followUps: {
+                            experience: "你通过{point}走出困境的经历很鼓舞人，能分享更多细节吗？",
+                            learn: "从{point}中学到的经验很宝贵，对你有什么改变？",
+                            grow: "这段经历如何帮助你在处理压力方面成长？"
+                        }
+                    },
+                    {
+                        ai: "面对长期的压力，你会如何调整心态和生活方式？",
+                        followUps: {
+                            mindset: "你培养{point}的心态很积极，是如何做到的？",
+                            change: "关于{point}的改变很有启发，能分享具体的转变过程吗？",
+                            maintain: "如何保持{point}的长期效果？有什么建议？"
+                        }
+                    }
+                ]
             }
-        });
+        ]
     }
+};
 
-    if (momentsUpload) {
-        momentsUpload.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                handleFileUpload(file, 'moments');
-            }
-        });
+// 用户性格特征分析系统
+const personalityAnalysis = {
+    expressionStyle: {
+        enthusiastic: 0,
+        reserved: 0,
+        direct: 0,
+        indirect: 0
+    },
+    communicationPattern: {
+        proactive: 0,
+        reactive: 0,
+        detailed: 0,
+        concise: 0
+    },
+    emotionalStyle: {
+        expressive: 0,
+        controlled: 0,
+        empathetic: 0,
+        objective: 0
+    },
+    thinkingStyle: {
+        logical: 0,
+        intuitive: 0,
+        analytical: 0,
+        practical: 0
+    },
+    socialStyle: {
+        outgoing: 0,
+        selective: 0,
+        supportive: 0,
+        independent: 0
     }
+};
 
-    // 社交问题数据
-    const socialQuestions = [
-        // 习惯题
-        "你道歉时更常说'抱歉'还是'是我的问题'？为什么？",
-        "当别人夸奖你时，你最常用的回应是什么？",
-        "在群聊中，你更倾向于主动发起话题还是跟随话题？",
-        "遇到分歧时，你是更倾向于坚持己见还是寻求共识？",
-        "你习惯在社交媒体上分享生活细节吗？为什么？",
-        "你更喜欢私下沟通还是在群里讨论问题？",
-        "你一般多久回复一次消息？为什么这样安排？",
-        "你如何看待工作和生活之间的社交界限？",
-        "你更倾向于线上还是线下社交？为什么？",
-        "你如何处理与他人的意见分歧？"
-    ];
-
-    const randomScenes = [
-        "同事剽窃你的创意还在会议上邀功",
-        "领导临时改变项目方向但不给更多资源",
-        "团队成员在群里公开质疑你的决策",
-        "客户深夜要求修改已确认的方案",
-        "合作伙伴拖延交付影响整体进度",
-        "会议中发现汇报数据存在重大错误",
-        "下属消极抵抗你布置的任务",
-        "跨部门同事给你甩锅推责",
-        "重要客户威胁要投诉你",
-        "新同事在背后散布不实言论"
-    ];
-
-    // AI对话功能变量
-    let currentQuestionIndex = 0;
-    let sceneCount = 0;
-    let sceneAnswers = [];
-    let userAnswers = [];
-    let currentMode = '';
-
-    // 打开场景模式
-    window.openSceneMode = function() {
-        currentMode = 'scene';
-        const chatModal = document.getElementById('chat-modal');
-        const chatMessages = document.querySelector('.chat-messages');
-        const messageInput = document.querySelector('.message-input');
-        
-        chatModal.classList.add('active');
-        chatMessages.innerHTML = '';
-        currentQuestionIndex = 0;
-        sceneCount = 0;
-        sceneAnswers = [];
-        
-        // 开始第一个场景
-        startNewScene();
-    }
-
-    // 打开问答模式
-    window.openQAMode = function() {
-        currentMode = 'qa';
-        const chatModal = document.getElementById('chat-modal');
-        const chatMessages = document.querySelector('.chat-messages');
-        const messageInput = document.querySelector('.message-input');
-        
-        chatModal.classList.add('active');
-        chatMessages.innerHTML = '';
-        currentQuestionIndex = 0;
-        userAnswers = [];
-        
-        // 开始问答
-        addAIMessage('欢迎来到模拟问答室！接下来我会问你10个问题，包括情境题和习惯题，请认真回答每一个问题。');
-        setTimeout(() => {
-            addAIMessage(socialQuestions[currentQuestionIndex]);
-        }, 1000);
-    }
-
-    // 关闭聊天模态框
-    window.closeChatModal = function() {
-        const chatModal = document.getElementById('chat-modal');
-        chatModal.classList.remove('active');
-        currentMode = '';
-    }
-
-    // 添加消息到聊天界面
-    function addUserMessage(message) {
-        const chatMessages = document.querySelector('.chat-messages');
-        const messageElement = document.createElement('div');
-        messageElement.className = 'message user-message';
-        messageElement.textContent = message;
-        chatMessages.appendChild(messageElement);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    function addAIMessage(message) {
-        const chatMessages = document.querySelector('.chat-messages');
-        const messageElement = document.createElement('div');
-        messageElement.className = 'message ai-message';
-        messageElement.textContent = message;
-        chatMessages.appendChild(messageElement);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    // 开始新场景
-    function startNewScene() {
-        if (sceneCount < 5) {
-            let randomIndex;
-            // 确保选择未使用过的场景
-            do {
-                randomIndex = Math.floor(Math.random() * randomScenes.length);
-            } while (usedSceneIndexes.has(randomIndex));
-            
-            // 记录已使用的场景索引
-            usedSceneIndexes.add(randomIndex);
-            const scene = randomScenes[randomIndex];
-            
-            if (sceneCount === 0) {
-                addAIMessage('欢迎来到场景任意门！接下来我会随机给出5个社交场景，请告诉我你会如何应对。');
-                setTimeout(() => {
-                    addAIMessage(`场景 ${sceneCount + 1}/5：${scene}\n请问你会如何应对这个情况？`);
-                }, 1000);
-            } else {
-                addAIMessage(`场景 ${sceneCount + 1}/5：${scene}\n请问你会如何应对这个情况？`);
-            }
-        } else {
-            // 所有场景完成，进行统一分析
-            analyzeAllScenes();
-            // 重置已使用场景集合，为下一轮准备
-            usedSceneIndexes.clear();
+// 更新用户偏好
+function updateUserPreferences(question, answer) {
+    const { userPreferences } = styleAnalysis;
+    
+    if (question.includes("表达")) {
+        if (answer.includes("哇！") || answer.includes("太棒了")) {
+            userPreferences.expressionStyle = "热情直接";
+        } else if (answer.includes("不错")) {
+            userPreferences.expressionStyle = "平和稳重";
+        } else if (answer.includes("还可以")) {
+            userPreferences.expressionStyle = "含蓄委婉";
+        }
+    } else if (question.includes("标点")) {
+        userPreferences.punctuationHabit = answer.split(/[,，、]/);
+    } else if (question.includes("方式")) {
+        if (answer.includes("开门见山")) {
+            userPreferences.communicationPattern = "直接明快";
+        } else if (answer.includes("徐徐道来")) {
+            userPreferences.communicationPattern = "循序渐进";
+        } else if (answer.includes("先抛出问题")) {
+            userPreferences.communicationPattern = "引导思考";
+        }
+    } else if (question.includes("群聊")) {
+        if (answer.includes("主动带动")) {
+            userPreferences.socialStyle = "主动活跃";
+        } else if (answer.includes("积极回应")) {
+            userPreferences.socialStyle = "积极配合";
+        } else if (answer.includes("选择性参与")) {
+            userPreferences.socialStyle = "选择性参与";
+        } else if (answer.includes("潜水")) {
+            userPreferences.socialStyle = "安静观察";
+        }
+    } else if (question.includes("描述")) {
+        if (answer.includes("重点突出")) {
+            userPreferences.descriptionPreference = "重点突出";
+        } else if (answer.includes("细节丰富")) {
+            userPreferences.descriptionPreference = "细节丰富";
+        } else if (answer.includes("逻辑清晰")) {
+            userPreferences.descriptionPreference = "逻辑清晰";
+        } else if (answer.includes("随性")) {
+            userPreferences.descriptionPreference = "自然随性";
         }
     }
+}
 
-    // 分析所有场景回答
-    async function analyzeAllScenes() {
-        try {
-            addAIMessage('感谢你的回答！我正在综合分析你在所有场景中的表现...');
-            console.log('开始分析场景回答:', sceneAnswers);
-            
-            const response = await fetch(`${API_BASE_URL}/api/chat`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    messages: [{
-                            role: "system",
-                        content: `作为一个专业的语言表达分析师，请分析用户在以下场景中的语言表达特点：
-
-${sceneAnswers.map((answer, index) => 
-`场景${index + 1}：${answer.scene}
-用户回应：${answer.response}`).join('\n\n')}
-
-请从以下几个维度进行综合分析：
-1. 语言风格（用词特点、句式结构、表达方式等）
-2. 表达习惯（语气词使用、标点符号、表情符号等）
-3. 沟通模式（对话节奏、回应方式等）
-4. 语言策略（说服技巧、缓和语气、强调重点等）
-5. 表达倾向（直接/间接、正式/随意、简洁/详细等）
-
-请提供以下格式的JSON分析结果：
-{
-    "traits": [
-        "语言精练",
-        "逻辑清晰",
-        "善用比喻",
-        "重视细节",
-        "结构完整"
-    ],
-    "socialStyles": [
-        {"tag": "用词精准", "confidence": 0.85},
-        {"tag": "句式简洁", "confidence": 0.80},
-        {"tag": "善用反问", "confidence": 0.75},
-        {"tag": "语气温和", "confidence": 0.82},
-        {"tag": "重点突出", "confidence": 0.78}
-    ],
-    "suggestions": [
-        "可以适当增加生动的比喻",
-        "注意调整语气的轻重",
-        "保持现有的逻辑性",
-        "可以尝试更多互动性表达",
-        "继续保持清晰的层次感"
-    ],
-    "languageStyle": {
-        "formality": 0.8,
-        "emotionality": 0.6,
-        "directness": 0.7,
-        "complexity": 0.65
-    }
-}`
-                    }]
-                })
-            });
-
-            if (!response.ok) {
-                console.error('API响应错误:', response.status, response.statusText);
-                throw new Error(`分析请求失败: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            console.log('API响应数据:', data);
-
-            if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-                console.error('API响应格式错误:', data);
-                throw new Error('API响应格式不正确');
-            }
-
-                const content = data.choices[0].message.content;
-            const jsonMatch = content.match(/\{[\s\S]*\}/);
-            
-            if (!jsonMatch) {
-                console.error('无法解析JSON结果:', content);
-                throw new Error('无法解析分析结果');
-            }
-            
-            try {
-                const result = JSON.parse(jsonMatch[0]);
-            result.source = 'aiAnalysis';
-            
-            // 更新分析结果显示
-            updateAnalysisResults(result);
-            
-            // 显示完成消息
-                addAIMessage('分析完成！我已经更新了你的社交画像。你可以查看"性格特征"来了解你的核心特质，查看"社交风格"来了解你的表达习惯。记得给那些符合你特点的标签点赞哦！');
-                
-                // 添加查看结果的提示
-                setTimeout(() => {
-                    addAIMessage('温馨提示：向上滚动页面就能看到完整的分析结果啦！');
-                }, 1500);
-            } catch (parseError) {
-                console.error('JSON解析错误:', parseError, jsonMatch[0]);
-                throw new Error('解析分析结果时出错');
-            }
-            
-        } catch (error) {
-            console.error('场景分析失败:', error);
-            addAIMessage('抱歉，分析过程出现错误：' + error.message);
-            addExitButton();
+// 更新用户偏好分析
+function updatePersonalityAnalysis(question, answer) {
+    const analysis = personalityAnalysis;
+    
+    // 根据问题和回答更新性格特征分数
+    if (question.includes("表达")) {
+        if (answer.includes("哇！") || answer.includes("太棒了")) {
+            analysis.expressionStyle.enthusiastic += 2;
+            analysis.emotionalStyle.expressive += 1;
+        } else if (answer.includes("不错")) {
+            analysis.expressionStyle.reserved += 1;
+            analysis.emotionalStyle.controlled += 1;
+        } else if (answer.includes("还可以")) {
+            analysis.expressionStyle.reserved += 2;
+            analysis.communicationPattern.concise += 1;
         }
     }
-
-    // 处理问答模式的最后分析
-    async function analyzeQAResponses() {
-        try {
-            addAIMessage('感谢你的回答！我正在分析你的语言表达风格...');
-            console.log('开始分析问答回答:', userAnswers);
-            
-            const response = await fetch(`${API_BASE_URL}/api/chat`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    messages: [{
-                        role: "system",
-                        content: `作为一个专业的语言表达分析师，请分析用户在以下问答中的语言表达特点：
-
-${socialQuestions.map((q, i) => 
-`问题${i + 1}：${q}
-回答：${userAnswers[i] || '未回答'}`).join('\n\n')}
-
-请从以下几个维度分析：
-1. 语言风格（用词选择、句式特点、表达方式等）
-2. 表达习惯（语气词、标点符号、表情符号等）
-3. 沟通模式（对话节奏、回应方式等）
-4. 语言策略（说服技巧、缓和语气、强调重点等）
-5. 表达倾向（直接/间接、正式/随意、简洁/详细等）
-
-请提供以下格式的JSON分析结果：
-{
-    "traits": [
-        "表达流畅",
-        "用词准确",
-        "结构清晰",
-        "语气平和",
-        "重点明确"
-    ],
-    "socialStyles": [
-        {"tag": "善用类比", "confidence": 0.85},
-        {"tag": "语气舒缓", "confidence": 0.80},
-        {"tag": "逻辑分明", "confidence": 0.75},
-        {"tag": "细节丰富", "confidence": 0.82},
-        {"tag": "层次分明", "confidence": 0.78}
-    ],
-    "suggestions": [
-        "可以尝试更多修辞手法",
-        "保持现有的逻辑性",
-        "适当增加互动性表达",
-        "继续保持语言的准确性",
-        "注意调整表达的节奏感"
-    ],
-    "languageStyle": {
-        "formality": 0.7,
-        "emotionality": 0.6,
-        "directness": 0.8,
-        "complexity": 0.65
-    }
-}`
-                    }]
-                })
-            });
-
-            if (!response.ok) {
-                console.error('API响应错误:', response.status, response.statusText);
-                throw new Error(`分析请求失败: ${response.status} ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            console.log('API响应数据:', data);
-
-            if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-                console.error('API响应格式错误:', data);
-                throw new Error('API响应格式不正确');
-            }
-
-            const content = data.choices[0].message.content;
-            const jsonMatch = content.match(/\{[\s\S]*\}/);
-            
-            if (!jsonMatch) {
-                console.error('无法解析JSON结果:', content);
-                throw new Error('无法解析分析结果');
-            }
-            
-            try {
-                const result = JSON.parse(jsonMatch[0]);
-                result.source = 'aiAnalysis';
-                
-                // 更新分析结果显示
-                updateAnalysisResults(result);
-                
-                // 显示完成消息
-                addAIMessage('分析完成！我已经在社交画像分析中展示了分析结果。');
-            } catch (parseError) {
-                console.error('JSON解析错误:', parseError, jsonMatch[0]);
-                throw new Error('解析分析结果时出错');
-            }
-            
-        } catch (error) {
-            console.error('问答分析失败:', error);
-            addAIMessage('抱歉，分析过程出现错误：' + error.message);
-            addExitButton();
+    
+    if (question.includes("标点")) {
+        if (answer.includes("！")) {
+            analysis.emotionalStyle.expressive += 2;
+            analysis.expressionStyle.enthusiastic += 1;
+        } else if (answer.includes("～")) {
+            analysis.emotionalStyle.expressive += 1;
+            analysis.socialStyle.outgoing += 1;
+        } else if (answer.includes("。")) {
+            analysis.emotionalStyle.controlled += 2;
+            analysis.expressionStyle.reserved += 1;
         }
     }
-
-    // 添加退出按钮
-    function addExitButton() {
-        const chatMessages = document.querySelector('.chat-messages');
-        const buttonsDiv = document.createElement('div');
-        buttonsDiv.className = 'exit-buttons';
-        buttonsDiv.innerHTML = `
-            <button class="chat-btn exit-btn" onclick="closeChatModal()">退出</button>
-        `;
-        chatMessages.appendChild(buttonsDiv);
+    
+    if (question.includes("方式")) {
+        if (answer.includes("开门见山")) {
+            analysis.expressionStyle.direct += 2;
+            analysis.communicationPattern.concise += 1;
+        } else if (answer.includes("徐徐道来")) {
+            analysis.communicationPattern.detailed += 2;
+            analysis.thinkingStyle.analytical += 1;
+        } else if (answer.includes("先抛出问题")) {
+            analysis.thinkingStyle.analytical += 2;
+            analysis.communicationPattern.proactive += 1;
+        }
     }
-
-    // 发送消息处理
-    document.querySelector('.send-btn').addEventListener('click', async () => {
-        const messageInput = document.querySelector('.message-input');
-            const message = messageInput.value.trim();
-            if (!message) return;
-
-            addUserMessage(message);
-            messageInput.value = '';
-
-            if (currentMode === 'scene') {
-                // 保存场景回答
-                sceneAnswers.push({
-                    scene: randomScenes[currentQuestionIndex],
-                    response: message
-                });
-                
-                sceneCount++;
-                
-                // 检查是否还有更多场景
-            if (sceneCount < 5) {
-                    setTimeout(() => {
-                        startNewScene();
-                    }, 1000);
-                } else {
-                    analyzeAllScenes();
-                }
-        } else if (currentMode === 'qa') {
-                // 社交问答室模式
-                userAnswers.push(message);
-                
-                if (currentQuestionIndex < socialQuestions.length - 1) {
-                    currentQuestionIndex++;
-                    setTimeout(() => {
-                        addAIMessage(socialQuestions[currentQuestionIndex]);
-                    }, 1000);
-                } else {
-                analyzeQAResponses();
-            }
+    
+    if (question.includes("群聊")) {
+        if (answer.includes("主动带动")) {
+            analysis.socialStyle.outgoing += 2;
+            analysis.communicationPattern.proactive += 2;
+        } else if (answer.includes("积极回应")) {
+            analysis.socialStyle.supportive += 2;
+            analysis.communicationPattern.reactive += 1;
+        } else if (answer.includes("选择性参与")) {
+            analysis.socialStyle.selective += 2;
+            analysis.thinkingStyle.analytical += 1;
+        } else if (answer.includes("潜水")) {
+            analysis.socialStyle.independent += 2;
+            analysis.expressionStyle.reserved += 1;
         }
-    });
-
-    // 消息输入框回车发送
-    document.querySelector('.message-input').addEventListener('keypress', async (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            document.querySelector('.send-btn').click();
+    }
+    
+    if (question.includes("描述")) {
+        if (answer.includes("重点突出")) {
+            analysis.thinkingStyle.logical += 2;
+            analysis.communicationPattern.concise += 1;
+        } else if (answer.includes("细节丰富")) {
+            analysis.communicationPattern.detailed += 2;
+            analysis.thinkingStyle.analytical += 1;
+        } else if (answer.includes("逻辑清晰")) {
+            analysis.thinkingStyle.logical += 2;
+            analysis.thinkingStyle.analytical += 1;
+        } else if (answer.includes("随性自然")) {
+            analysis.thinkingStyle.intuitive += 2;
+            analysis.expressionStyle.direct += 1;
         }
-    });
+    }
+}
 
-    // 关闭按钮事件
-    document.querySelector('.close-chat-btn').addEventListener('click', closeChatModal);
+// 分析用户性格特征
+function analyzePersonality() {
+    const analysis = personalityAnalysis;
+    let traits = [];
+    
+    // 分析表达风格
+    if (analysis.expressionStyle.enthusiastic > analysis.expressionStyle.reserved) {
+        traits.push("热情活泼");
+    } else {
+        traits.push("沉稳内敛");
+    }
+    
+    // 分析沟通模式
+    if (analysis.communicationPattern.proactive > analysis.communicationPattern.reactive) {
+        traits.push("善于主动");
+    } else {
+        traits.push("倾向回应");
+    }
+    
+    // 分析思维方式
+    if (analysis.thinkingStyle.logical > analysis.thinkingStyle.intuitive) {
+        traits.push("理性思考");
+    } else {
+        traits.push("感性直觉");
+    }
+    
+    // 分析社交风格
+    if (analysis.socialStyle.outgoing > analysis.socialStyle.selective) {
+        traits.push("乐于社交");
+    } else {
+        traits.push("注重质量");
+    }
+    
+    // 返回最显著的两个特征
+    return traits.slice(0, 2).join("、");
+}
 
-    // 保存个人信息
-    profileForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const profileData = {
-            name: document.getElementById('edit-name').value,
-            age: document.getElementById('edit-age').value,
-            occupation: document.getElementById('edit-occupation').value,
-            mbti: document.getElementById('edit-mbti').value
+// 生成针对性的后续问题
+function generateFollowUpQuestion() {
+    const analysis = personalityAnalysis;
+    
+    if (analysis.expressionStyle.enthusiastic > analysis.expressionStyle.reserved) {
+        return "你似乎很善于表达热情，能分享一下你最常用的表达方式吗？（比如：会用什么样的语气词、表情或者特定用语？在什么场合会这样表达？）";
+    } else if (analysis.expressionStyle.reserved > analysis.expressionStyle.enthusiastic) {
+        return "你看起来比较含蓄，在需要表达重要观点时，你会用什么方式确保对方理解你的意思呢？（比如：会先组织好语言再说，还是会用具体例子来说明？）";
+    }
+    
+    if (analysis.thinkingStyle.logical > analysis.thinkingStyle.intuitive) {
+        return "你很注重逻辑思维，能分享一下你最近一次说服他人的经历吗？（比如：你是怎么组织语言的？用了哪些论据？）";
+    } else {
+        return "你似乎更倾向于感性表达，能举个例子说说你是怎么分享个人经历的吗？（比如：最近和朋友分享了什么有趣的事？你是怎么描述的？）";
+    }
+}
+
+// 生成场景问题
+function generateScenarioQuestion() {
+    const analysis = personalityAnalysis;
+    
+    // 根据用户特征选择合适的场景
+    if (analysis.socialStyle.outgoing > analysis.socialStyle.selective) {
+        return {
+            context: "假设你在一个新的社交场合",
+            question: "你通常会用什么方式开启对话？能分享一个最近的例子吗？"
         };
-        
-        // 保存到localStorage
-        localStorage.setItem('userProfile', JSON.stringify(profileData));
-        
-        // 更新显示
-        document.getElementById('user-name').textContent = profileData.name || '未设置';
-        document.getElementById('user-age').textContent = profileData.age || '未设置';
-        document.getElementById('user-occupation').textContent = profileData.occupation || '未设置';
-        document.getElementById('user-mbti').textContent = profileData.mbti || '未设置';
-        
-        // 关闭模态框
-        closeModal();
-    });
-
-    // 加载保存的数据
-    function loadProfile() {
-        const profile = JSON.parse(localStorage.getItem('userProfile')) || {};
-        document.getElementById('user-name').textContent = profile.name || '未设置';
-        document.getElementById('user-age').textContent = profile.age || '未设置';
-        document.getElementById('user-occupation').textContent = profile.occupation || '未设置';
-        document.getElementById('user-mbti').textContent = profile.mbti || '未设置';
-
-        // 加载头像
-        const savedAvatar = localStorage.getItem('userAvatar');
-        if (savedAvatar) {
-            avatarImg.src = savedAvatar;
-        }
+    } else {
+        return {
+            context: "在一个需要深入交流的场合",
+            question: "你会如何选择合适的话题和表达方式？"
+        };
     }
+}
 
-    // 初始化加载
-    loadProfile();
+// 开始分析
+function startAnalysis() {
+    console.log('开始分析...');
+    
+    // 隐藏开始按钮
+    const startButton = document.querySelector('.start-analysis-btn');
+    if (startButton) {
+        startButton.style.display = 'none';
+    }
+    
+    // 显示必要的UI元素
+    document.querySelector('.analysis-progress').classList.add('active');
+    document.querySelector('.chat-container').classList.add('active');
+    
+    // 重置分析状态
+    styleAnalysis.currentSceneIndex = 0;
+    styleAnalysis.currentRoundIndex = 0;
+    styleAnalysis.waitingForResponse = false;
+    
+    // 清空聊天记录
+    const chatMessages = document.querySelector('.chat-messages');
+    if (chatMessages) {
+        chatMessages.innerHTML = '';
+    }
+    
+    // 开始第一个场景
+    const firstScene = dialogueScenarios.scenes[0];
+    if (firstScene) {
+        appendMessage('ai', `让我们开始第一个场景：${firstScene.title}\n${firstScene.context}`);
+                setTimeout(() => {
+            const firstRound = firstScene.rounds[0];
+            if (firstRound) {
+                appendMessage('ai', firstRound.ai);
+                styleAnalysis.waitingForResponse = true;
+            }
+        }, 1500);
+    }
+    
+    // 更新进度条
+    updateProgress();
+}
 
-    // 在页面初始化时调用
-    initializeEmergencySelects();
+// 发送消息
+function sendMessage() {
+    const messageInput = document.querySelector('.message-input');
+    const message = messageInput.value.trim();
+    
+    if (!message) {
+        console.log('消息为空，忽略发送');
+        return;
+    }
+    
+    // 清空输入框
+    messageInput.value = '';
+    
+    // 处理用户回答
+    handleUserResponse(message);
+}
 
-    // 在页面加载时初始化数据
-    loadAnalysisResults();
+// 处理用户回答
+function handleUserResponse(message) {
+    console.log('处理用户回答:', message);
+    
+    // 显示用户消息
+    appendMessage('user', message);
+    
+    // 获取当前场景和回合
+    const currentScene = dialogueScenarios.scenes[styleAnalysis.currentSceneIndex];
+    const currentRound = currentScene?.rounds[styleAnalysis.currentRoundIndex];
+    
+    if (!currentScene || !currentRound) {
+        console.error('无法获取当前场景或回合');
+        return;
+    }
+    
+    // 生成AI回应
+    const followUpKey = Object.keys(currentRound.followUps)[Math.floor(Math.random() * Object.keys(currentRound.followUps).length)];
+    const followUpTemplate = currentRound.followUps[followUpKey];
+    const aiResponse = followUpTemplate.replace('{point}', extractMainPoint(message));
+    
+    // 显示AI回应
+    setTimeout(() => {
+        appendMessage('ai', aiResponse);
+        
+        // 准备下一轮对话
+        setTimeout(() => {
+            styleAnalysis.currentRoundIndex++;
+            
+            // 检查是否需要进入下一个场景
+            if (styleAnalysis.currentRoundIndex >= currentScene.rounds.length) {
+                styleAnalysis.currentSceneIndex++;
+                styleAnalysis.currentRoundIndex = 0;
+                
+                // 检查是否所有场景都完成
+                if (styleAnalysis.currentSceneIndex >= dialogueScenarios.scenes.length) {
+                    finishAnalysis();
+                    return;
+                }
+                
+                // 开始新场景
+                const nextScene = dialogueScenarios.scenes[styleAnalysis.currentSceneIndex];
+                appendMessage('ai', `让我们进入下一个场景：${nextScene.title}\n${nextScene.context}`);
+                setTimeout(() => {
+                    appendMessage('ai', nextScene.rounds[0].ai);
+                }, 1500);
+            } else {
+                // 继续当前场景的下一轮
+                appendMessage('ai', currentScene.rounds[styleAnalysis.currentRoundIndex].ai);
+            }
+            
+            // 更新进度条
+            updateProgress();
+        }, 1500);
+    }, 1000);
+}
+
+// 提取用户回答中的主要观点
+function extractMainPoint(message) {
+    const sentences = message.split(/[。！？.!?]/);
+    return sentences[0] || message.substring(0, 20);
+}
+
+// 更新进度条
+function updateProgress() {
+    console.log('更新进度条...');
+    
+    const totalScenes = dialogueScenarios.scenes.length;
+    const totalRounds = dialogueScenarios.scenes.reduce((total, scene) => total + scene.rounds.length, 0);
+    const currentScene = styleAnalysis.currentSceneIndex || 0;
+    const currentRound = styleAnalysis.currentRoundIndex || 0;
+    
+    // 计算当前完成的轮次总数
+    const completedRounds = dialogueScenarios.scenes.slice(0, currentScene).reduce((total, scene) => total + scene.rounds.length, 0) + currentRound;
+    
+    // 计算进度百分比
+    const progress = (completedRounds / totalRounds) * 100;
+    
+    // 更新进度条
+    const progressBar = document.querySelector('.progress-fill');
+    const progressText = document.querySelector('#analysis-stage');
+    
+    if (progressBar && progressText) {
+        progressBar.style.width = `${progress}%`;
+        const currentSceneTitle = dialogueScenarios.scenes[currentScene]?.title || '分析完成';
+        progressText.textContent = `${currentSceneTitle} (${Math.round(progress)}%)`;
+                } else {
+        console.error('未找到进度条元素');
+    }
+}
+
+// 完成分析
+function finishAnalysis() {
+    console.log('完成分析...');
+    
+    // 隐藏对话区域
+    document.querySelector('.chat-container').classList.remove('active');
+    
+    // 生成分析结果
+    const results = generateResults();
+    
+    // 更新结果显示
+    updateResultDisplay(results);
+    
+    // 显示结果确认区域
+    document.querySelector('.result-confirmation').classList.add('active');
+    
+    // 更新个人名片中的语言风格标签
+    updateStyleTags(results);
+}
+
+// 生成分析结果
+function generateResults() {
+    return {
+        sentence: styleAnalysis.results.sentence || '简洁明了',
+        rhythm: styleAnalysis.results.rhythm || '平稳有序',
+        punctuation: styleAnalysis.results.punctuation || '规范使用',
+        habit: styleAnalysis.results.habit || '客观理性',
+        organization: styleAnalysis.results.organization || '逻辑清晰'
+    };
+}
+
+// 更新结果显示
+function updateResultDisplay(results) {
+    const resultContent = document.querySelector('.result-content');
+    resultContent.innerHTML = `
+        <div class="result-item">
+            <label>句式特点：</label>
+            <span class="result-value">${results.sentence}</span>
+        </div>
+        <div class="result-item">
+            <label>表达节奏：</label>
+            <span class="result-value">${results.rhythm}</span>
+        </div>
+        <div class="result-item">
+            <label>标点使用：</label>
+            <span class="result-value">${results.punctuation}</span>
+        </div>
+        <div class="result-item">
+            <label>语言习惯：</label>
+            <span class="result-value">${results.habit}</span>
+        </div>
+        <div class="result-item">
+            <label>组织结构：</label>
+            <span class="result-value">${results.organization}</span>
+        </div>
+    `;
+}
+
+// 更新语言风格标签
+function updateStyleTags(results) {
+    document.getElementById('sentence-style').textContent = results.sentence;
+    document.getElementById('rhythm-style').textContent = results.rhythm;
+    document.getElementById('punctuation-style').textContent = results.punctuation;
+    document.getElementById('habit-style').textContent = results.habit;
+    document.getElementById('organization-style').textContent = results.organization;
+}
+
+// 确认结果
+function confirmResults() {
+    console.log('确认结果...');
+    
+    // 隐藏分析相关的元素
+    document.querySelector('.analysis-progress').classList.remove('active');
+    document.querySelector('.result-confirmation').classList.remove('active');
+    
+    // 显示开始按钮
+    const startButton = document.querySelector('.start-analysis-btn');
+    if (startButton) {
+        startButton.style.display = 'block';
+    }
+}
+
+// 修改结果
+function modifyResults() {
+    console.log('修改结果...');
+    
+    // 隐藏结果确认区域
+    document.querySelector('.result-confirmation').classList.remove('active');
+    
+    // 显示对话区域
+    document.querySelector('.chat-container').classList.add('active');
+    
+    // 重新开始最后一个场景
+    if (styleAnalysis.currentSceneIndex > 0) {
+        styleAnalysis.currentSceneIndex--;
+    }
+    styleAnalysis.currentRoundIndex = 0;
+    
+    const currentScene = dialogueScenarios.scenes[styleAnalysis.currentSceneIndex];
+    if (currentScene) {
+        appendMessage('ai', `让我们重新开始这个场景：${currentScene.title}\n${currentScene.context}`);
+        setTimeout(() => {
+            appendMessage('ai', currentScene.rounds[0].ai);
+        }, 1500);
+    }
+}
+
+// 添加消息到聊天区域
+function appendMessage(sender, content) {
+    console.log('添加消息:', sender, content);
+    
+    const chatMessages = document.querySelector('.chat-messages');
+    if (!chatMessages) {
+        console.error('未找到聊天消息容器');
+        return;
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${sender}-message`;
+    
+    const textDiv = document.createElement('div');
+    textDiv.className = 'message-text';
+    textDiv.textContent = content;
+    messageDiv.appendChild(textDiv);
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
 // 检查服务器连接

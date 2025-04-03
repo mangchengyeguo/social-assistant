@@ -69,35 +69,34 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderContacts() {
         // 按拼音排序
         contacts.sort((a, b) => {
-            const initialA = getInitial(a.name);
-            const initialB = getInitial(b.name);
-            return initialA.localeCompare(initialB);
-        });
-
-        // 分组联系人
-        const groupedContacts = {};
-        contacts.forEach(contact => {
-            const initial = getInitial(contact.name);
-            if (!groupedContacts[initial]) {
-                groupedContacts[initial] = [];
-            }
-            groupedContacts[initial].push(contact);
+            return a.name.localeCompare(b.name, 'zh-CN');
         });
 
         // 渲染联系人卡片
-        contactsGrid.innerHTML = Object.entries(groupedContacts).map(([initial, groupContacts]) => 
-            groupContacts.map(contact => `
-                <div class="contact-card" data-initial="${initial}" data-id="${contact.id}">
-                    <img src="${contact.avatar || avatarPreview.src}" alt="${contact.name}" class="contact-avatar">
-                    <h3 class="contact-name" title="${contact.name}">${contact.name}</h3>
-                    <div class="contact-info">
-                        <div>${contact.relationship || ''}</div>
-                        ${contact.mbti ? `<div>${contact.mbti}</div>` : ''}
-                    </div>
-                    <button class="delete-btn" data-id="${contact.id}">×</button>
+        contactsGrid.innerHTML = '';
+        
+        // 创建卡片容器
+        const cardsContainer = document.createElement('div');
+        cardsContainer.className = 'cards-container';
+        
+        // 渲染联系人卡片
+        contacts.forEach(contact => {
+            const card = document.createElement('div');
+            card.className = 'contact-card';
+            card.dataset.id = contact.id;
+            card.innerHTML = `
+                <img src="${contact.avatar || avatarPreview.src}" alt="${contact.name}" class="contact-avatar">
+                <h3 class="contact-name" title="${contact.name}">${contact.name}</h3>
+                <div class="contact-info">
+                    <div>${contact.relationship || ''}</div>
+                    ${contact.mbti ? `<div>${contact.mbti}</div>` : ''}
                 </div>
-            `).join('')
-        ).join('');
+                <button class="delete-btn" data-id="${contact.id}">×</button>
+            `;
+            cardsContainer.appendChild(card);
+        });
+        
+        contactsGrid.appendChild(cardsContainer);
 
         // 添加点击事件
         document.querySelectorAll('.contact-card').forEach(card => {
@@ -137,21 +136,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             });
-        });
-
-        // 更新字母导航状态
-        updateAlphabetNav(Object.keys(groupedContacts));
-    }
-
-    // 更新字母导航状态
-    function updateAlphabetNav(availableLetters) {
-        document.querySelectorAll('.letter-link').forEach(link => {
-            const letter = link.dataset.letter;
-            if (availableLetters.includes(letter)) {
-                link.classList.add('active');
-            } else {
-                link.classList.remove('active');
-            }
         });
     }
 

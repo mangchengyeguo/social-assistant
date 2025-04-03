@@ -16,16 +16,24 @@ logger = logging.getLogger(__name__)
 # 忽略urllib3的警告
 warnings.filterwarnings("ignore", category=Warning)
 
-app = Flask(__name__, static_url_path='', static_folder='.', template_folder='templates')
-# 配置CORS，允许所有来源
-CORS(app)
+app = Flask(__name__, static_url_path='', static_folder='.')
+
+# 配置CORS，允许所有来源，所有方法
+CORS(app, resources={
+    r"/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 # 加载环境变量
 load_dotenv()
 
 # API配置
-DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')  # 从环境变量获取API密钥
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
 API_URL = 'https://api.deepseek.com/v1/chat/completions'
+MODEL_NAME = 'deepseek-chat'
 
 # 配置请求重试策略
 retry_strategy = Retry(
@@ -51,61 +59,43 @@ def serve_file(path):
         logger.error(f"文件访问错误 {path}: {str(e)}")
         return f"文件未找到: {path}", 404
 
-@app.route('/api/chat', methods=['POST'])
+@app.route('/api/chat', methods=['POST', 'OPTIONS'])
 def chat():
+    if request.method == 'OPTIONS':
+        return '', 204
+        
     try:
         if not DEEPSEEK_API_KEY:
             logger.error("API密钥未找到")
-            return jsonify({'error': '未找到API密钥，请检查.env文件'}), 500
+            return jsonify({'error': '未找到API密钥，请检查环境变量'}), 500
             
         data = request.json
         logger.info(f"接收到的请求数据: {json.dumps(data, ensure_ascii=False)}")
         
-        # 构建API请求数据
-        api_request = {
-            "model": "deepseek-chat",
-            "messages": data.get('messages', []),
-            "temperature": 0.7,
-            "max_tokens": 2000,
-            "top_p": 0.95,
-            "stream": False
-        }
-        
         headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {DEEPSEEK_API_KEY}'
+            'Authorization': f'Bearer {DEEPSEEK_API_KEY}',
+            'Content-Type': 'application/json'
         }
         
         logger.info(f"正在发送请求到 {API_URL}")
-        logger.info(f"请求数据: {json.dumps(api_request, ensure_ascii=False)}")
+        logger.info(f"请求数据: {json.dumps(data, ensure_ascii=False)}")
         
-        # 使用session发送请求
-        response = session.post(
+        # 构建API请求数据
+        api_request_data = {
+            'model': MODEL_NAME,
+            'messages': data.get('messages', []),
+            'temperature': 0.7,
+            'stream': False
+        }
+        
+        response = requests.post(
             API_URL,
-            headers=headers,
-            json=api_request,
-            timeout=(5, 60)  # (连接超时, 读取超时)
+            json=api_request_data,
+            headers=headers
         )
         
-        logger.info(f"API响应状态码: {response.status_code}")
-        
-        if response.status_code != 200:
-            error_text = response.text
-            logger.error(f"API错误响应: {error_text}")
-            try:
-                error_json = response.json()
-                error_message = error_json.get('error', {}).get('message', error_text)
-            except:
-                error_message = error_text
-                
-            return jsonify({
-                'error': f'API请求失败: {response.status_code}',
-                'details': error_message
-            }), response.status_code
-            
-        result = response.json()
-        logger.info(f"API响应成功: {json.dumps(result, ensure_ascii=False)}")
-        return jsonify(result)
+        response.raise_for_status()
+        return jsonify(response.json())
         
     except requests.exceptions.ConnectTimeout:
         logger.error("API连接超时")
@@ -120,23 +110,12 @@ def chat():
         logger.error(f"请求异常: {str(e)}")
         return jsonify({'error': f'网络请求错误: {str(e)}'}), 500
     except Exception as e:
-        logger.error(f"其他异常: {str(e)}")
-        return jsonify({'error': f'服务器错误: {str(e)}'}), 500
+        logger.error(f"API错误: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
-@app.route('/api/test', methods=['GET', 'OPTIONS'])
+@app.route('/api/test', methods=['GET'])
 def test():
-    try:
-        logger.info("收到测试请求")
-        return jsonify({
-            'status': 'ok',
-            'message': '服务器正常运行'
-        })
-    except Exception as e:
-        logger.error(f"测试接口异常: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
+    return jsonify({"status": "ok", "message": "Server is running"})
 
 @app.route('/api/generate-tags', methods=['POST'])
 def generate_tags():
@@ -186,13 +165,13 @@ def generate_tags():
         logger.info(f"生成标签请求数据: {json.dumps({'text': text_content, 'images': image_files}, ensure_ascii=False)}")
         
         response = requests.post(
-            'https://api.deepseek.com/chat/completions',
+            API_URL,  # 使用统一的API端点
             headers={
                 'Authorization': f'Bearer {DEEPSEEK_API_KEY}',
                 'Content-Type': 'application/json'
             },
             json={
-                'model': 'deepseek-chat',
+                'model': MODEL_NAME,
                 'messages': [
                     {'role': 'system', 'content': system_prompt},
                     {'role': 'user', 'content': full_description}
@@ -220,13 +199,17 @@ def generate_tags():
         logger.error(f"生成标签时发生错误: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    return response
+
+# Vercel需要这个handler
+def handler(event, context):
+    return app
+
 if __name__ == '__main__':
-    port = 5002
-    print(f"服务器正在启动，端口: {port}")
-    print(f"测试地址: http://localhost:{port}/api/test")
-    
-    app.run(
-        host='localhost',
-        port=port,
-        debug=True
-    ) 
+    port = int(os.getenv('PORT', 5002))
+    app.run(host='0.0.0.0', port=port) 

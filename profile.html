@@ -3,167 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人画像 - AI社交助手</title>
+    <title>AI语言风格分析</title>
     <link rel="stylesheet" href="profile.css">
-    <script src="config.js"></script>
-    <script src="profile.js" defer></script>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3-cloud@1.2.5/build/d3.layout.cloud.min.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <a href="index.html" class="back-button">←</a>
-            <h1>个人画像</h1>
+            <h1>我的特征</h1>
         </header>
 
         <div class="main-content">
-            <!-- 顶部：用户名片展示区 -->
-            <section class="profile-card">
-                <div class="avatar-section">
-                    <div class="avatar-container">
-                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIGZpbGw9IiNFOUVDRUYiLz48cGF0aCBkPSJNMjUgMjVDMjguNSAyNSAzMS41IDIyIDMxLjUgMThTMjguNSAxMSAyNSAxMVMyMC41IDE0IDIwLjUgMThTMjEuNSAyNSAyNVpNMzUgMzZDMzUgMzIgMzAgMjggMjUgMjhTMTUgMzIgMTUgMzZWMzhINDVWMzZaIiBmaWxsPSIjQkJCIi8+PC9zdmc+" alt="用户头像">
-                        <div class="avatar-edit-hint">点击修改头像</div>
+            <!-- 个人名片部分 -->
+            <div class="profile-card">
+                <div class="avatar-container">
+                    <img src="default-avatar.png" alt="用户头像" id="profile-avatar">
+                    <div class="avatar-upload">
+                        <label for="avatar-input" class="upload-btn">更换头像</label>
+                        <input type="file" id="avatar-input" accept="image/*" style="display: none;">
                     </div>
                 </div>
-                <div class="profile-info">
-                    <div class="info-group">
-                        <label>姓名</label>
-                        <span class="info-value" id="user-name">未设置</span>
-                    </div>
-                    <div class="info-group">
-                        <label>年龄</label>
-                        <span class="info-value" id="user-age">未设置</span>
-                    </div>
-                    <div class="info-group">
-                        <label>职业</label>
-                        <span class="info-value" id="user-occupation">未设置</span>
-                    </div>
-                    <div class="info-group">
-                        <label>MBTI</label>
-                        <span class="info-value" id="user-mbti">未设置</span>
-                    </div>
-                </div>
-                <button class="edit-profile-btn">编辑资料</button>
-            </section>
-
-            <!-- 中部：数据采集与AI互动区 -->
-            <section class="data-collection">
-                <h2>AI互动分析</h2>
-                <div class="collection-methods">
-                    <div class="method-card">
-                        <h3>👤 社交人格分析</h3>
-                        <p>上传您的社交信息，AI将分析您的社交风格</p>
-                        <div class="analysis-options">
-                            <div class="upload-option">
-                                <h4>📄 上传文件</h4>
-                                <div class="upload-area">
-                                    <input type="file" id="file-upload" accept=".txt,.doc,.docx,.jpg,.jpeg,.png" multiple>
-                                    <label for="file-upload">选择文件</label>
-                                    <button type="button" class="clear-files-btn" style="display: none;">清空选择</button>
-                                </div>
-                                <div class="file-list"></div>
-                                <p class="upload-hint">支持聊天记录、朋友圈截图等</p>
-                            </div>
-                            <div class="text-option">
-                                <h4>✍️ 输入文字</h4>
-                                <textarea class="text-input" placeholder="输入您平时说话的内容、发过的朋友圈等..."></textarea>
-                            </div>
-                            <button class="analyze-btn">开始分析</button>
+                <div class="info-container">
+                    <div class="info-row">
+                        <div class="info-item">
+                            <label>姓名：</label>
+                            <span id="profile-name" class="editable" data-field="name">未设置</span>
+                        </div>
+                        <div class="info-item">
+                            <label>性别：</label>
+                            <span id="profile-gender" class="editable" data-field="gender">未设置</span>
                         </div>
                     </div>
-                    <div class="method-card">
-                        <h3>🤖 AI对话评估</h3>
-                        <p>通过AI互动分析您的社交特征</p>
-                        <div class="dialogue-section">
-                            <div class="dialogue-entrances">
-                                <div class="entrance-card scene-entrance" onclick="openSceneMode()">
-                                    <div class="entrance-icon">🎲</div>
-                                    <h3>场景任意门</h3>
-                                    <p>随机抽取5个社交场景，测试你的应对能力</p>
-                                </div>
-                                <div class="entrance-card qa-entrance" onclick="openQAMode()">
-                                    <div class="entrance-icon">💭</div>
-                                    <h3>模拟问答室</h3>
-                                    <p>回答10个精心设计的问题，深入了解你的社交风格</p>
-                                </div>
-                            </div>
+                    <div class="info-row">
+                        <div class="info-item">
+                            <label>年龄：</label>
+                            <span id="profile-age" class="editable" data-field="age">未设置</span>
+                        </div>
+                        <div class="info-item">
+                            <label>MBTI：</label>
+                            <span id="profile-mbti" class="editable" data-field="mbti">未设置</span>
                         </div>
                     </div>
-                </div>
-            </section>
-
-            <!-- 底部：结果展示与反馈优化区 -->
-            <section class="analysis-results">
-                <h2>社交画像分析</h2>
-                <div class="results-container">
-                    <div class="result-card personality">
-                        <h3>性格特征</h3>
-                        <div class="trait-chart">
-                            <!-- 性格特征图表将通过JS动态添加 -->
+                    <div class="info-item full-width">
+                        <label>语言风格：</label>
+                        <div class="style-tags">
+                            <span id="sentence-style">未分析</span>
+                            <span id="rhythm-style">未分析</span>
+                            <span id="punctuation-style">未分析</span>
+                            <span id="habit-style">未分析</span>
+                            <span id="organization-style">未分析</span>
                         </div>
                     </div>
-                    <div class="result-card social-style">
-                        <h3>社交风格</h3>
-                        <div class="tags-cloud">
-                            <!-- 社交标签将通过JS动态添加 -->
-                        </div>
-                    </div>
-                    <div class="result-card suggestions">
-                        <h3>个性化建议</h3>
-                        <ul class="suggestion-list">
-                            <!-- 建议将通过JS动态添加 -->
-                        </ul>
-                    </div>
-                </div>
-            </section>
-        </div>
-    </div>
-
-    <!-- 编辑个人信息模态框 -->
-    <div class="modal" id="edit-modal">
-        <div class="modal-content">
-            <h2>编辑个人信息</h2>
-            <form id="profile-form">
-                <div class="form-group">
-                    <label for="edit-name">姓名</label>
-                    <input type="text" id="edit-name" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit-age">年龄</label>
-                    <input type="number" id="edit-age" name="age" min="1" max="120">
-                </div>
-                <div class="form-group">
-                    <label for="edit-occupation">职业</label>
-                    <input type="text" id="edit-occupation" name="occupation">
-                </div>
-                <div class="form-group">
-                    <label for="edit-mbti">MBTI</label>
-                    <input type="text" id="edit-mbti" name="mbti" placeholder="例如：INTJ">
-                </div>
-                <div class="modal-buttons">
-                    <button type="button" class="cancel-btn">取消</button>
-                    <button type="submit" class="save-btn">保存</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- AI对话模态框 -->
-    <div class="modal" id="chat-modal">
-        <div class="modal-content">
-            <h2>AI社交分析对话</h2>
-            <div class="chat-container">
-                <div class="chat-messages"></div>
-                <div class="chat-input">
-                    <textarea placeholder="输入您的回复..." class="message-input"></textarea>
-                    <button class="send-btn">发送</button>
+                    <button class="edit-profile-btn">编辑资料</button>
                 </div>
             </div>
-            <div class="modal-buttons">
-                <button class="close-chat-btn">关闭</button>
+
+            <!-- AI互动分析部分 -->
+            <div class="ai-interaction">
+                <div class="ai-header">
+                    <h2>AI语言风格分析</h2>
+                    <button class="start-analysis-btn" onclick="startAnalysis()">开始分析</button>
+                </div>
+
+                <div class="analysis-content">
+                    <!-- 分析进度 -->
+                    <div class="analysis-progress">
+                        <div class="progress-text">
+                            当前阶段：<span id="analysis-stage">未开始</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- 对话区域 -->
+                    <div class="chat-container">
+                        <div class="chat-messages"></div>
+                        <div class="chat-input">
+                            <textarea class="message-input" placeholder="请输入你的回答..." rows="1"></textarea>
+                            <button class="send-btn" onclick="sendMessage()">发送</button>
+                        </div>
+                    </div>
+
+                    <!-- 分析结果 -->
+                    <div class="result-confirmation">
+                        <h3>分析结果</h3>
+                        <div class="result-content"></div>
+                        <div class="result-actions">
+                            <button class="confirm-btn" onclick="confirmResults()">确认</button>
+                            <button class="modify-btn" onclick="modifyResults()">修改</button>
+                            <button class="reanalyze-btn" onclick="startAnalysis()">重新分析</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="menu-items">
             </div>
         </div>
     </div>
+
+    <script src="profile.js"></script>
 </body>
 </html> 

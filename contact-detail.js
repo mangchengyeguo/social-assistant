@@ -1,9 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // 添加API配置检查
-    const API_CONFIG = {
-        BASE_URL: 'https://api.aisocialassistant.com'  // 修改为公网可访问的API地址
-    };
-
+    // 删除本地API配置，使用全局config.js
     console.log('初始化应用...', {
         API_URL: API_CONFIG.BASE_URL,
         时间: new Date().toISOString()
@@ -589,57 +585,73 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const CHAT_PROMPTS = {
                 howToCommunicate: `▎角色定位
-
-你是一位资深沟通策略专家。请基于用户画像、联系人信息、用户和联系人关系，直接给出最佳沟通方案以及策略解读
+你是一位专业的沟通策略专家，擅长基于MBTI性格分析和关系定位，制定最佳沟通方案。
 
 ▎必读信息
-
-1. 用户画像：
-   - 性格特征和表达习惯（包括标点符号使用习惯）
-   - 社交风格和处事方式
-   - 语言表达特点（例如：用词、语气、标点符号等）
-
-2. 联系人特征：
-   - MBTI类型特点和关键词
+1. 联系人特征：
+   - MBTI类型特点
    - 个性标签和行为模式
-   - 沟通偏好和决策方式
+   - 年龄和性别
+   - 职业背景（如果有）
 
-3. 关系定位：
+2. 关系定位：
    - 双方关系属性
    - 互动历史
+   - 关系亲疏度
+
+3. 场景信息：
+   - 沟通目的
+   - 具体情境
+   - 特殊限制
 
 ▎输出内容
 
-1、沟通方案 
+1、完整回复方案
 
-[完整对话文本，每句话单独一行]
+开场语：
+[具体的开场白内容]
 
+核心内容：
+[具体的表达内容]
 
-2、策略解读
+结束语：
+[具体的结束语]
 
-1. 每句话的策略和原因：
-   - 第1句：[这句话为什么要这样说]
-     - MBTI考虑：[基于对方MBTI的考虑]
-     - 性格考虑：[基于对方性格标签的考虑]
-     - 关系考虑：[基于双方关系的考虑]
-     - 预期效果：[这样说的预期效果]
-   - 第2句：[这句话为什么要这样说]
-     - MBTI考虑：[基于对方MBTI的考虑]
-     - 性格考虑：[基于对方性格标签的考虑]
-     - 关系考虑：[基于双方关系的考虑]
-     - 预期效果：[这样说的预期效果]
-   - ...（逐句分析）
+2、策略分析说明
 
-2. 整体策略：
-   - 表达风格选择：[具体解释]
-   - MBTI策略要点：[具体解释]
-   - 性格特征应对：[具体解释]
-   - 关系处理策略：[具体解释]
+MBTI特征匹配：
+- 对方的MBTI核心特征：[具体说明]
+- 沟通策略匹配点：[具体说明]
+- 需要注意的MBTI盲点：[具体说明]
+
+性格特征考量：
+- 关键性格特点：[具体说明]
+- 表达方式调整：[具体说明]
+- 情绪触发点规避：[具体说明]
+
+关系策略：
+- 当前关系定位：[具体说明]
+- 权力距离把控：[具体说明]
+- 边界感维护：[具体说明]
+
+表达技巧：
+- 语气语调：[具体说明]
+- 用词选择：[具体说明]
+- 节奏控制：[具体说明]
+- 重点强调：[具体说明]
+
+3、预期效果
+
+- 直接反应：[对方可能的即时反应]
+- 长期影响：[对关系的长远影响]
+- 注意事项：[需要规避的风险]
 
 ▎格式要求
-- 每句话必须单独成行
-- 每个段落之间空一行
-- 不使用任何markdown格式`,
+- 每个部分之间空一行
+- 不使用任何markdown格式
+- 所有建议必须具体明确，不使用模糊表达
+- 不使用任何引导性问句
+- 不询问用户任何问题`,
 
                 analyze: `▎角色定位
 
@@ -692,72 +704,77 @@ document.addEventListener('DOMContentLoaded', function() {
 - 不使用任何markdown格式`,
 
                 guessPreference: `▎角色定位
-
-你是一位专业的个性分析师和喜好预测专家，擅长根据用户画像和联系人信息，预测对方偏好和喜欢的东西。
+你是一位专业的个性分析师和礼物推荐专家，擅长根据对方的MBTI类型、性格特点和场景需求，推荐最合适的礼物选择。
 
 ▎必读信息
+1. 联系人特征：
+   - MBTI类型特点
+   - 个性标签和行为模式
+   - 年龄和性别
+   - 职业背景（如果有）
 
-1. 用户画像：
-   - MBTI类型
-   - 核心标签
-   - 关键属性（年龄/生日）
-
-2. 关系图谱：
-   - 亲密程度（领导/恋人等）
-   - 社交距离定位
-
-3. 需求场景：
-   - 节日
-   - 纪念日
-   - 特殊场景
-
-4. 关系定位：
+2. 关系定位：
    - 双方关系属性
    - 互动历史
+   - 关系亲疏度
+
+3. 场景信息：
+   - 送礼场合（生日/节日/纪念日等）
+   - 预算范围
+   - 特殊偏好或禁忌
 
 ▎输出内容
 
-1、礼物建议
+1、礼物推荐方案
 
-提案1：[礼物/偏好名称]
+方案一：[礼物名称及具体型号/价格]
 
-匹配度分析：
-- MBTI特征匹配：[从MBTI角度分析为什么合适]
-- 性格标签匹配：[从性格特征分析为什么合适]
-- 场景适配性：[具体使用场景描述]
-- 关系考量：[从关系角度分析合适程度]
+选择理由：
+1. MBTI匹配度：[从MBTI角度分析为什么适合]
+2. 个性匹配：[如何符合对方性格特点]
+3. 场景适合度：[为什么适合这个场合]
+4. 关系考量：[如何符合当前关系定位]
+5. 预期效果：[送出后可能的反应和效果]
 
-提案2：[礼物/偏好名称]
+方案二：[礼物名称及具体型号/价格]
 
-匹配度分析：
-- MBTI特征匹配：[从MBTI角度分析为什么合适]
-- 性格标签匹配：[从性格特征分析为什么合适]
-- 场景适配性：[具体使用场景描述]
-- 关系考量：[从关系角度分析合适程度]
+选择理由：
+1. MBTI匹配度：[从MBTI角度分析为什么适合]
+2. 个性匹配：[如何符合对方性格特点]
+3. 场景适合度：[为什么适合这个场合]
+4. 关系考量：[如何符合当前关系定位]
+5. 预期效果：[送出后可能的反应和效果]
 
-提案3：[礼物/偏好名称]
+方案三：[礼物名称及具体型号/价格]
 
-匹配度分析：
-- MBTI特征匹配：[从MBTI角度分析为什么合适]
-- 性格标签匹配：[从性格特征分析为什么合适]
-- 场景适配性：[具体使用场景描述]
-- 关系考量：[从关系角度分析合适程度]
+选择理由：
+1. MBTI匹配度：[从MBTI角度分析为什么适合]
+2. 个性匹配：[如何符合对方性格特点]
+3. 场景适合度：[为什么适合这个场合]
+4. 关系考量：[如何符合当前关系定位]
+5. 预期效果：[送出后可能的反应和效果]
 
-2、整体建议
+2、最终建议
 
-1. 选择策略：
-   - 最佳选择：[分析哪个提案最合适]
-   - 备选方案：[其他提案的使用场景]
-   - 注意事项：[选择和赠送时的注意点]
+最佳推荐：[推荐哪个方案最合适，为什么]
 
-2. 时机建议：
-   - 最佳时机：[什么时候送最合适]
-   - 场景选择：[在什么场合送最合适]
-   - 表达方式：[如何表达能让对方最受用]
+赠送建议：
+- 赠送时机：[具体的赠送时间点]
+- 赠送方式：[具体的赠送方式和仪式感建议]
+- 包装建议：[具体的包装方式]
+- 赠送话术：[送礼时的具体用语]
+
+注意事项：
+- 预算参考：[具体的价格区间]
+- 避免事项：[具体的禁忌提醒]
+- 备选建议：[如果首选买不到的具体备选方案]
 
 ▎格式要求
-- 每点之前空行分隔
-- 不使用markdown格式`
+- 每个部分之间空一行
+- 不使用任何markdown格式
+- 所有建议必须具体明确，不使用模糊表达
+- 不使用任何引导性问句
+- 不询问用户任何问题`
             };
 
             // 构建消息历史
@@ -787,6 +804,12 @@ document.addEventListener('DOMContentLoaded', function() {
    - 每句话必须单独成行
    - 每个段落之间空一行
    - 不使用任何markdown格式
+
+5. 重要提示：
+   - 直接给出完整的回复方案，不要询问用户是否需要帮助
+   - 不要使用"需要我帮你xxx吗？"之类的引导性问句
+   - 假设用户已经提供了所有必要信息
+   - 如果信息不足，基于常见情况给出通用回复模板
 
 ▌联系人信息
 姓名：${currentContact.name}
@@ -945,31 +968,34 @@ MBTI：${currentContact.mbti || '未设置'}
         const feedbackDiv = document.createElement('div');
         feedbackDiv.className = 'feedback-buttons';
         feedbackDiv.innerHTML = `
-            <button class="feedback-btn satisfied">满意</button>
-            <button class="feedback-btn unsatisfied">不满意</button>
+            <button class="feedback-btn regenerate">换一换</button>
         `;
         
         messageElement.appendChild(feedbackDiv);
         
-        // 满意按钮点击事件
-        feedbackDiv.querySelector('.satisfied').addEventListener('click', function() {
-            this.classList.add('selected');
-            feedbackDiv.style.display = 'none';
-            // 可以在这里添加其他满意后的操作
-        });
-        
-        // 不满意按钮点击事件
-        feedbackDiv.querySelector('.unsatisfied').addEventListener('click', async function() {
-            const userMessage = messageHistory[messageHistory.length - 2].content;
-            // 重新生成回复
-            const aiResponse = await getAIResponse(currentChannel, userMessage);
-            // 更新最后一条AI消息
-            messageHistory.pop();
-            messageHistory.push({ isUser: false, content: aiResponse });
-            // 更新显示
-            messageElement.textContent = aiResponse;
-            // 重新添加反馈按钮
-            addFeedbackButtons(messageElement);
+        // 换一换按钮点击事件
+        feedbackDiv.querySelector('.regenerate').addEventListener('click', async function() {
+            try {
+                // 显示加载状态
+                const originalText = messageElement.textContent;
+                messageElement.textContent = 'AI思考中...';
+                
+                // 获取用户最后一条消息
+                const userMessage = messageHistory[messageHistory.length - 2].content;
+                // 重新生成回复
+                const aiResponse = await getAIResponse(currentChannel, userMessage);
+                // 更新最后一条AI消息
+                messageHistory.pop();
+                messageHistory.push({ isUser: false, content: aiResponse });
+                // 更新显示
+                messageElement.textContent = aiResponse;
+                // 重新添加反馈按钮
+                addFeedbackButtons(messageElement);
+            } catch (error) {
+                console.error('重新生成回复失败:', error);
+                messageElement.textContent = '重新生成失败，请重试';
+                addFeedbackButtons(messageElement);
+            }
         });
     }
 
@@ -990,24 +1016,20 @@ MBTI：${currentContact.mbti || '未设置'}
         background: white;
         cursor: pointer;
         transition: all 0.3s;
+        font-size: 14px;
     }
 
     .feedback-btn:hover {
         background: #f5f5f5;
     }
 
-    .feedback-btn.satisfied {
-        color: #52c41a;
-        border-color: #52c41a;
+    .feedback-btn.regenerate {
+        color: #1890ff;
+        border-color: #1890ff;
     }
 
-    .feedback-btn.unsatisfied {
-        color: #ff4d4f;
-        border-color: #ff4d4f;
-    }
-
-    .feedback-btn.selected {
-        background: #f6ffed;
+    .feedback-btn.regenerate:hover {
+        background: #e6f7ff;
     }
     `;
 
@@ -1053,4 +1075,76 @@ MBTI：${currentContact.mbti || '未设置'}
         if (manualTagsContainer) manualTagsContainer.innerHTML = '';
         if (imageFiles) imageFiles.innerHTML = '';
     });
+
+    // 添加拼音排序功能
+    function getPinyin(str) {
+        return str.localeCompare(str, 'zh-Hans-CN-u-co-pinyin');
+    }
+
+    // 按拼音排序联系人
+    function sortContactsByPinyin(contacts) {
+        return contacts.sort((a, b) => {
+            return a.name.localeCompare(b.name, 'zh-CN');
+        });
+    }
+
+    // 按拼音首字母分组
+    function groupContactsByPinyin(contacts) {
+        const groups = {};
+        const sortedContacts = sortContactsByPinyin(contacts);
+        
+        sortedContacts.forEach(contact => {
+            const firstChar = contact.name.charAt(0);
+            const pinyin = firstChar.localeCompare('A', 'zh-CN') >= 0 ? firstChar : '#';
+            
+            if (!groups[pinyin]) {
+                groups[pinyin] = [];
+            }
+            groups[pinyin].push(contact);
+        });
+        
+        return groups;
+    }
+
+    // 渲染联系人列表
+    function renderContacts(contacts) {
+        const container = document.querySelector('.contacts-grid');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        const groupedContacts = groupContactsByPinyin(contacts);
+        
+        Object.keys(groupedContacts)
+            .sort((a, b) => a.localeCompare(b, 'zh-CN'))
+            .forEach(pinyin => {
+                const indexHeader = document.createElement('div');
+                indexHeader.className = 'pinyin-index';
+                indexHeader.textContent = pinyin;
+                container.appendChild(indexHeader);
+                
+                const contactsInGroup = groupedContacts[pinyin];
+                contactsInGroup.forEach(contact => {
+                    const card = createContactCard(contact);
+                    container.appendChild(card);
+                });
+            });
+    }
+
+    // 创建联系人卡片
+    function createContactCard(contact) {
+        const card = document.createElement('div');
+        card.className = 'contact-card';
+        card.innerHTML = `
+            <img src="${contact.avatar || 'default-avatar.png'}" alt="${contact.name}" class="avatar">
+            <div class="name">${contact.name}</div>
+            <div class="relationship">${contact.relationship || '未设置'}</div>
+            <div class="tags">
+                ${(contact.tags || []).map(tag => `<span class="tag">${tag}</span>`).join('')}
+            </div>
+        `;
+        card.addEventListener('click', () => {
+            window.location.href = `contact-detail.html?id=${contact.id}`;
+        });
+        return card;
+    }
 }); 
