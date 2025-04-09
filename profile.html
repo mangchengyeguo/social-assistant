@@ -44,16 +44,55 @@
                             <span id="profile-mbti" class="editable" data-field="mbti">未设置</span>
                         </div>
                     </div>
-                    <div class="info-item full-width">
-                        <label>语言风格：</label>
-                        <div class="style-tags">
-                            <span id="sentence-style">未分析</span>
-                            <span id="rhythm-style">未分析</span>
-                            <span id="punctuation-style">未分析</span>
-                            <span id="habit-style">未分析</span>
-                            <span id="organization-style">未分析</span>
+                    
+                    <!-- 新增：语言特征分析结果 -->
+                    <div class="analysis-results">
+                        <div class="result-section">
+                            <h3>语言风格画像</h3>
+                            <div class="style-tags" id="language-style-tags">
+                                <span class="tag" id="core-feature">核心特征</span>
+                                <span class="tag" id="expression-habit">表达习惯</span>
+                                <span class="tag" id="language-charm">语言魅力</span>
+                            </div>
+                        </div>
+                        
+                        <div class="result-section">
+                            <h3>情感表达画像</h3>
+                            <div class="style-tags" id="emotion-style-tags">
+                                <span class="tag" id="emotion-feature">情感特点</span>
+                                <span class="tag" id="empathy-ability">共情能力</span>
+                                <span class="tag" id="emotion-control">情绪控制</span>
+                            </div>
+                        </div>
+                        
+                        <div class="result-section">
+                            <h3>社交行为画像</h3>
+                            <div class="style-tags" id="social-style-tags">
+                                <span class="tag" id="interaction-mode">互动模式</span>
+                                <span class="tag" id="social-strategy">社交策略</span>
+                                <span class="tag" id="interpersonal-distance">人际距离</span>
+                            </div>
+                        </div>
+                        
+                        <div class="result-section">
+                            <h3>思维模式画像</h3>
+                            <div class="style-tags" id="thinking-style-tags">
+                                <span class="tag" id="thinking-feature">思维特点</span>
+                                <span class="tag" id="decision-style">决策风格</span>
+                                <span class="tag" id="innovation-tendency">创新倾向</span>
+                            </div>
+                        </div>
+                        
+                        <div class="result-section">
+                            <h3>价值观画像</h3>
+                            <div class="style-tags" id="value-style-tags">
+                                <span class="tag" id="core-value">核心价值</span>
+                                <span class="tag" id="principle">处事原则</span>
+                                <span class="tag" id="life-attitude">生活态度</span>
+                            </div>
                         </div>
                     </div>
+                    
                     <button class="edit-profile-btn">编辑资料</button>
                 </div>
             </div>
@@ -62,17 +101,27 @@
             <div class="ai-interaction">
                 <div class="ai-header">
                     <h2>AI语言风格分析</h2>
-                    <button class="start-analysis-btn" onclick="startAnalysis()">开始分析</button>
+                    <button class="start-analysis-btn">开始分析</button>
                 </div>
 
                 <div class="analysis-content">
-                    <!-- 分析进度 -->
+                    <!-- 场景信息部分 -->
+                    <div class="scene-info" style="display: none;">
+                        <h3 class="scene-title"></h3>
+                        <p class="scene-context"></p>
+                        <div class="role-info">
+                            <div class="my-role">我的角色：<strong></strong></div>
+                            <div class="ai-role">AI角色：<strong></strong></div>
+                        </div>
+                    </div>
+
+                    <!-- 分析进度部分 -->
                     <div class="analysis-progress">
                         <div class="progress-text">
-                            当前阶段：<span id="analysis-stage">未开始</span>
+                            <span id="analysis-stage">未开始</span>
                         </div>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: 0%"></div>
+                            <div class="progress-fill"></div>
                         </div>
                     </div>
 
@@ -80,19 +129,32 @@
                     <div class="chat-container">
                         <div class="chat-messages"></div>
                         <div class="chat-input">
-                            <textarea class="message-input" placeholder="请输入你的回答..." rows="1"></textarea>
-                            <button class="send-btn" onclick="sendMessage()">发送</button>
+                            <textarea class="message-input" placeholder="请输入你的回答..." rows="3"></textarea>
+                            <button class="send-btn">发送</button>
                         </div>
                     </div>
 
                     <!-- 分析结果 -->
                     <div class="result-confirmation">
                         <h3>分析结果</h3>
-                        <div class="result-content"></div>
+                        <div class="result-content">
+                            <div class="analysis-summary">
+                                <h4>语言风格特征</h4>
+                                <div class="feature-list"></div>
+                            </div>
+                            <div class="personality-tags">
+                                <h4>个性标签</h4>
+                                <div class="tag-list"></div>
+                            </div>
+                            <div class="communication-suggestions">
+                                <h4>沟通建议</h4>
+                                <div class="suggestion-list"></div>
+                            </div>
+                        </div>
                         <div class="result-actions">
-                            <button class="confirm-btn" onclick="confirmResults()">确认</button>
-                            <button class="modify-btn" onclick="modifyResults()">修改</button>
-                            <button class="reanalyze-btn" onclick="startAnalysis()">重新分析</button>
+                            <button class="confirm-btn">确认</button>
+                            <button class="modify-btn">修改</button>
+                            <button class="reanalyze-btn">重新分析</button>
                         </div>
                     </div>
                 </div>
@@ -105,6 +167,7 @@
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script src="profile.js"></script>
 </body>
 </html> 

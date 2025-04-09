@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>社交应急助手</title>
+    <title>快速开始</title>
     <link rel="stylesheet" href="emergency.css">
     <script src="config.js"></script>
 </head>
@@ -11,76 +11,72 @@
     <div class="container">
         <header>
             <a href="index.html" class="back-button">←</a>
-            <h1>社交应急助手</h1>
+            <h1>快速开始</h1>
         </header>
 
         <div class="ai-response-container">
             <div class="input-area">
                 <div class="form-group">
                     <label>场景类型</label>
-                    <select name="sceneType" class="scene-type" aria-label="场景类型">
-                        <option value="">请选择场景类型</option>
-                        <option value="workplace">职场谈判</option>
-                        <option value="meeting">工作会议</option>
-                        <option value="family">家庭聚餐</option>
-                        <option value="date">约会场合</option>
-                        <option value="academic">学术交流</option>
-                        <option value="business">商务谈判</option>
-                        <option value="friend">朋友聚会</option>
-                        <option value="stranger">陌生人社交</option>
-                        <option value="online">网络社交</option>
-                        <option value="public">公共演讲</option>
-                        <option value="team">团队协作</option>
-                        <option value="interview">面试场合</option>
-                        <option value="social-media">社交媒体互动</option>
-                        <option value="cultural">文化交流</option>
-                        <option value="neighbor">邻里交往</option>
-                        <option value="custom">自定义...</option>
-                    </select>
+                    <div class="tab-container scene-type">
+                        <div class="tab-item" data-value="workplace">职场谈判</div>
+                        <div class="tab-item" data-value="meeting">工作会议</div>
+                        <div class="tab-item" data-value="family">家庭聚餐</div>
+                        <div class="tab-item" data-value="date">约会场合</div>
+                        <div class="tab-item" data-value="academic">学术交流</div>
+                        <div class="tab-item" data-value="business">商务谈判</div>
+                        <div class="tab-item" data-value="friend">朋友聚会</div>
+                        <div class="tab-item" data-value="stranger">陌生人社交</div>
+                        <div class="tab-item" data-value="online">网络社交</div>
+                        <div class="tab-item" data-value="public">公共演讲</div>
+                        <div class="tab-item" data-value="team">团队协作</div>
+                        <div class="tab-item" data-value="interview">面试场合</div>
+                        <div class="tab-item" data-value="social-media">社交媒体互动</div>
+                        <div class="tab-item" data-value="cultural">文化交流</div>
+                        <div class="tab-item" data-value="neighbor">邻里交往</div>
+                        <div class="tab-item" data-value="custom">自定义...</div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>对象关系</label>
-                    <select name="relationship" class="relation-type" aria-label="对象关系">
-                        <option value="">请选择对象关系</option>
-                        <option value="colleague">同事</option>
-                        <option value="boss">上级领导</option>
-                        <option value="subordinate">下属</option>
-                        <option value="friend">朋友</option>
-                        <option value="family">家人</option>
-                        <option value="partner">恋人</option>
-                        <option value="client">客户</option>
-                        <option value="teacher">老师</option>
-                        <option value="student">学生</option>
-                        <option value="stranger">陌生人</option>
-                        <option value="custom">自定义...</option>
-                    </select>
+                    <div class="tab-container relation-type">
+                        <div class="tab-item" data-value="colleague">同事</div>
+                        <div class="tab-item" data-value="boss">上级领导</div>
+                        <div class="tab-item" data-value="subordinate">下属</div>
+                        <div class="tab-item" data-value="friend">朋友</div>
+                        <div class="tab-item" data-value="family">家人</div>
+                        <div class="tab-item" data-value="partner">恋人</div>
+                        <div class="tab-item" data-value="client">客户</div>
+                        <div class="tab-item" data-value="teacher">老师</div>
+                        <div class="tab-item" data-value="student">学生</div>
+                        <div class="tab-item" data-value="stranger">陌生人</div>
+                        <div class="tab-item" data-value="custom">自定义...</div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>我的角色</label>
-                    <select name="role" class="role-type" aria-label="我的角色">
-                        <option value="">请选择您的角色</option>
-                        <option value="employee">员工</option>
-                        <option value="manager">管理者</option>
-                        <option value="student">学生</option>
-                        <option value="teacher">教师</option>
-                        <option value="child">子女</option>
-                        <option value="parent">父母</option>
-                        <option value="friend">朋友</option>
-                        <option value="custom">自定义...</option>
-                    </select>
+                    <div class="tab-container role-type">
+                        <div class="tab-item" data-value="employee">员工</div>
+                        <div class="tab-item" data-value="manager">管理者</div>
+                        <div class="tab-item" data-value="student">学生</div>
+                        <div class="tab-item" data-value="teacher">教师</div>
+                        <div class="tab-item" data-value="child">子女</div>
+                        <div class="tab-item" data-value="parent">父母</div>
+                        <div class="tab-item" data-value="friend">朋友</div>
+                        <div class="tab-item" data-value="custom">自定义...</div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>核心诉求</label>
-                    <select name="goal" class="goal-type" aria-label="核心诉求">
-                        <option value="">请选择核心诉求</option>
-                        <option value="negotiate">谈判协商</option>
-                        <option value="apologize">道歉和解</option>
-                        <option value="refuse">委婉拒绝</option>
-                        <option value="feedback">反馈建议</option>
-                        <option value="support">寻求支持</option>
-                        <option value="resolve">解决冲突</option>
-                        <option value="custom">自定义...</option>
-                    </select>
+                    <div class="tab-container goal-type">
+                        <div class="tab-item" data-value="negotiate">谈判协商</div>
+                        <div class="tab-item" data-value="apologize">道歉和解</div>
+                        <div class="tab-item" data-value="refuse">委婉拒绝</div>
+                        <div class="tab-item" data-value="feedback">反馈建议</div>
+                        <div class="tab-item" data-value="support">寻求支持</div>
+                        <div class="tab-item" data-value="resolve">解决冲突</div>
+                        <div class="tab-item" data-value="custom">自定义...</div>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>补充说明（可选）</label>

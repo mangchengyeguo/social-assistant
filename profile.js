@@ -1,6 +1,15 @@
 // 立即执行的调试代码
 console.log('profile.js 开始加载...');
 
+// 备用API配置
+const BACKUP_API_CONFIG = {
+    API_KEY: 'sk-eb6c2d8ce56347b8b88bf8f08419f417',
+    API_ENDPOINT: 'https://api.deepseek.com/chat/completions',
+    MODEL: 'deepseek-chat',
+    TEMPERATURE: 0.7,
+    MAX_TOKENS: 1000
+};
+
 // 服务器配置
 const API_BASE_URL = 'http://localhost:5002';
 
@@ -28,24 +37,56 @@ window.addEventListener('unhandledrejection', function(event) {
     }
 });
 
-document.addEventListener('DOMContentLoaded', () => {
+// 初始化页面
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM加载完成，开始初始化...');
     initializeUI();
     setupEventListeners();
 });
+
+// 全局状态对象
+let currentState = {
+    sceneIndex: 0,
+    roundIndex: 0,
+    isWaitingForResponse: false
+};
+
+// 全局DOM元素引用
+let elements = {
+    startButton: null,
+    analysisProgress: null,
+    chatContainer: null,
+    sceneInfo: null,
+    messagesContainer: null,
+    sendButton: null,
+    messageInput: null,
+    progressFill: null,
+    analysisStage: null
+};
 
 // 初始化UI
 function initializeUI() {
     console.log('初始化UI...');
     
+    // 初始化DOM元素引用
+    elements.startButton = document.querySelector('.start-analysis-btn');
+    elements.analysisProgress = document.querySelector('.analysis-progress');
+    elements.chatContainer = document.querySelector('.chat-container');
+    elements.sceneInfo = document.querySelector('.scene-info');
+    elements.messagesContainer = document.querySelector('.chat-messages');
+    elements.sendButton = document.querySelector('.send-btn');
+    elements.messageInput = document.querySelector('.message-input');
+    elements.progressFill = document.querySelector('.progress-fill');
+    elements.analysisStage = document.getElementById('analysis-stage');
+    
     // 隐藏分析相关的元素
-    document.querySelector('.analysis-progress').classList.remove('active');
-    document.querySelector('.chat-container').classList.remove('active');
-    document.querySelector('.result-confirmation').classList.remove('active');
+    if (elements.analysisProgress) elements.analysisProgress.style.display = 'none';
+    if (elements.chatContainer) elements.chatContainer.style.display = 'none';
+    if (elements.sceneInfo) elements.sceneInfo.style.display = 'none';
     
     // 显示开始分析按钮
-    const startButton = document.querySelector('.start-analysis-btn');
-    if (startButton) {
-        startButton.style.display = 'block';
+    if (elements.startButton) {
+        elements.startButton.style.display = 'block';
     }
     
     // 加载用户信息
@@ -54,19 +95,55 @@ function initializeUI() {
 
 // 设置事件监听器
 function setupEventListeners() {
-    const startButton = document.querySelector('.start-analysis-btn');
-    const sendButton = document.querySelector('.send-btn');
-    const messageInput = document.querySelector('.message-input');
-    const confirmButton = document.querySelector('.confirm-btn');
-    const modifyButton = document.querySelector('.modify-btn');
-    const reanalyzeButton = document.querySelector('.reanalyze-btn');
+    console.log('设置事件监听器...');
+    
+    // 开始分析按钮点击事件
+    if (elements.startButton) {
+        elements.startButton.addEventListener('click', startAnalysis);
+    }
+    
+    // 发送消息按钮点击事件
+    if (elements.sendButton) {
+        elements.sendButton.addEventListener('click', handleSendButtonClick);
+    }
+    
+    // 消息输入框回车事件
+    if (elements.messageInput) {
+        elements.messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendButtonClick();
+            }
+        });
+    }
 
-    startButton.addEventListener('click', startAnalysis);
-    sendButton.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', handleEnterKey);
-    confirmButton.addEventListener('click', confirmResults);
-    modifyButton.addEventListener('click', modifyResults);
-    reanalyzeButton.addEventListener('click', startAnalysis);
+    // 编辑资料按钮点击事件
+    const editButton = document.querySelector('.edit-profile-btn');
+    if (editButton) {
+        editButton.addEventListener('click', showEditProfileModal);
+    }
+
+    // 头像上传事件
+    const avatarInput = document.getElementById('avatar-input');
+    if (avatarInput) {
+        avatarInput.addEventListener('change', handleAvatarUpload);
+    }
+}
+
+// 处理发送按钮点击
+function handleSendButtonClick() {
+    if (!elements.messageInput) return;
+    
+    const message = elements.messageInput.value.trim();
+    if (message && currentState.isWaitingForResponse) {
+        // 清空输入框，但不再这里添加消息到对话区域
+        elements.messageInput.value = '';
+        
+        // 处理用户回答
+        handleUserResponse(message);
+    } else {
+        console.log('无法发送消息：空消息或当前不在等待用户回应状态');
+    }
 }
 
 // 加载用户信息
@@ -235,333 +312,46 @@ const styleAnalysis = {
         descriptionPreference: ''
     },
     dialogueScenarios: {
+        currentSceneIndex: 0,
+        currentRoundIndex: 0,
         scenes: [
             {
-                title: "职场沟通",
-                context: "你最近在带领一个重要项目，需要与团队成员和其他部门协调",
-                role: "项目负责人",
+                title: '工作压力场景',
+                context: '你正在办公室工作，突然主管走过来询问项目进度',
+                userRole: '项目组成员',
+                aiRole: '项目主管',
                 rounds: [
                     {
-                        ai: "最近我们的项目进度似乎有点延迟，你觉得主要的原因是什么？我们该如何调整？",
-                        followUps: {
-                            analysis: "你提到{point}这个问题很关键，能详细说说这个问题是如何影响项目进度的吗？",
-                            solution: "关于{point}的解决方案很有见地，你准备如何具体实施？",
-                            team: "你提到需要{point}，如何确保团队每个成员都能理解并配合这个调整？"
-                        }
+                        question: '最近项目进度似乎有点延迟，能跟我说说具体情况吗？',
+                        analysis: ['压力处理', '沟通方式', '问题解决']
                     },
                     {
-                        ai: "有两个部门对项目的技术方案存在分歧，作为项目负责人，你会如何协调？",
-                        followUps: {
-                            approach: "你选择先{point}的方式很专业，能说说为什么会这样考虑吗？",
-                            balance: "在平衡{point}时，你会特别注意哪些细节？",
-                            communication: "你提到要通过{point}来达成共识，能分享一下具体的沟通技巧吗？"
-                        }
+                        question: '明白了。那你觉得我们需要采取什么措施来追赶进度呢？',
+                        analysis: ['主动性', '解决方案', '团队协作']
                     },
                     {
-                        ai: "客户突然要求增加新功能，但这可能影响原定的交付时间，你会如何处理？",
-                        followUps: {
-                            negotiate: "你提出的{point}建议很有建设性，如何向客户解释这个方案？",
-                            priority: "关于{point}的优先级安排很合理，能详细说说评估标准吗？",
-                            timeline: "你说到要{point}来调整时间线，具体要考虑哪些因素？"
-                        }
-                    },
-                    {
-                        ai: "团队中有成员经常加班但产出效率不高，你会怎么帮助他改善？",
-                        followUps: {
-                            mentor: "你提到要通过{point}来提升效率，能分享一些具体的指导方法吗？",
-                            support: "关于{point}的支持方式很贴心，如何确保不影响他的积极性？",
-                            balance: "在平衡{point}时，你会如何避免可能的负面影响？"
-                        }
-                    },
-                    {
-                        ai: "项目即将结项，你打算如何总结经验教训并激励团队？",
-                        followUps: {
-                            review: "你提到要总结{point}这些方面，能具体说说每个点的启发吗？",
-                            celebrate: "关于{point}的庆祝方式很有意思，如何让每个成员都感受到认可？",
-                            future: "对于{point}的规划很有前瞻性，能详细说说你的想法吗？"
-                        }
+                        question: '如果其他团队成员对你的方案有不同意见，你会怎么处理？',
+                        analysis: ['冲突处理', '团队意识', '灵活性']
                     }
                 ]
             },
             {
-                title: "生活压力",
-                context: "你正在经历工作与生活的平衡挑战，需要调整和规划",
-                role: "倾诉者",
+                title: '社交场合场景',
+                context: '你在一个社交活动中遇到了一些新朋友',
+                userRole: '参与者',
+                aiRole: '新认识的朋友',
                 rounds: [
                     {
-                        ai: "最近感觉工作压力很大，经常带回家，影响到生活质量，你是怎么处理这种情况的？",
-                        followUps: {
-                            method: "你提到通过{point}来缓解压力，能具体说说这个方法是怎么帮助你的吗？",
-                            balance: "关于{point}的平衡方式很独特，你是如何坚持下来的？",
-                            effect: "这种{point}的改变给你带来了什么具体的变化？"
-                        }
+                        question: '听说你在科技行业工作，能分享一下你的工作经历吗？',
+                        analysis: ['开放程度', '表达方式', '社交风格']
                     },
                     {
-                        ai: "有时候会觉得生活很单调，每天都是工作-家庭两点一线，你会怎么调剂生活？",
-                        followUps: {
-                            hobby: "你提到{point}这个兴趣爱好很有趣，能分享一些具体的经历吗？",
-                            social: "通过{point}来扩展社交圈子的想法很好，你是怎么开始的？",
-                            growth: "在{point}的过程中，你有什么特别的收获吗？"
-                        }
+                        question: '这很有趣！你平时除了工作之外还有什么兴趣爱好？',
+                        analysis: ['兴趣分享', '互动深度', '话题延展']
                     },
                     {
-                        ai: "面对家人对工作时间的抱怨，你会如何沟通和改善这个问题？",
-                        followUps: {
-                            communicate: "你选择用{point}的方式来沟通很智慧，能分享更多细节吗？",
-                            arrange: "关于{point}的时间安排很有创意，是如何想到的？",
-                            quality: "你提到要注重{point}，具体是通过什么方式实现的？"
-                        }
-                    },
-                    {
-                        ai: "经常熬夜工作影响了身体状况，你有什么好的作息调整建议吗？",
-                        followUps: {
-                            health: "你提到{point}对健康很重要，能分享一下具体的作息安排吗？",
-                            habit: "养成{point}这个习惯确实不容易，你是怎么克服困难的？",
-                            benefit: "实践这些改变后，你感受到了哪些明显的好处？"
-                        }
-                    },
-                    {
-                        ai: "面对职业发展和个人生活的选择，你是如何做决定的？",
-                        followUps: {
-                            value: "你提到{point}这个价值观很重要，是什么经历让你有这样的认识？",
-                            choice: "在{point}的选择上，你考虑了哪些关键因素？",
-                            plan: "对于{point}的规划很清晰，能详细说说未来的目标吗？"
-                        }
-                    }
-                ]
-            },
-            {
-                title: "社交网络",
-                context: "探讨在社交媒体时代如何建立和维护人际关系",
-                role: "社交达人",
-                rounds: [
-                    {
-                        ai: "现在很多人都在社交媒体上展示生活，你觉得这种分享方式会影响真实的人际关系吗？",
-                        followUps: {
-                            opinion: "你对{point}的观点很有深度，能举个具体的例子吗？",
-                            experience: "你提到{point}的经历很有趣，能详细说说当时的情况吗？",
-                            balance: "在{point}的平衡上，你是如何把握的？"
-                        }
-                    },
-                    {
-                        ai: "在社交媒体上经常看到朋友的生活，有时会产生焦虑感，你会怎么调适这种心理？",
-                        followUps: {
-                            mindset: "你说到要{point}这种心态很健康，是如何培养的？",
-                            focus: "关注{point}确实很重要，你是怎么做到不被外界干扰的？",
-                            growth: "通过{point}来成长的方式很棒，能分享一些具体的改变吗？"
-                        }
-                    },
-                    {
-                        ai: "如何在保持线上活跃的同时，也维护好线下的友谊关系？",
-                        followUps: {
-                            method: "你通过{point}来维系友谊的方式很有效，能详细说说吗？",
-                            time: "在{point}的时间分配上，你是如何安排的？",
-                            quality: "提升{point}的建议很实用，你是怎么实践的？"
-                        }
-                    },
-                    {
-                        ai: "遇到朋友在社交媒体上发布负面情绪，你会怎么回应和支持？",
-                        followUps: {
-                            support: "你选择{point}的方式来支持朋友很温暖，能分享更多细节吗？",
-                            care: "关于{point}的关心方式很贴心，是基于什么考虑？",
-                            follow: "后续通过{point}来跟进很重要，你一般会怎么做？"
-                        }
-                    },
-                    {
-                        ai: "如何在社交媒体上展现真实的自己，同时又保持适当的界限？",
-                        followUps: {
-                            authentic: "你提到要{point}来保持真实，这种平衡是怎么找到的？",
-                            boundary: "设置{point}的界限很必要，你是如何判断的？",
-                            share: "关于{point}的分享原则很好，能具体说说考虑因素吗？"
-                        }
-                    }
-                ]
-            },
-            {
-                title: "情感沟通",
-                context: "处理亲密关系中的情感表达和矛盾处理",
-                role: "感情顾问",
-                rounds: [
-                    {
-                        ai: "在亲密关系中，当对方情绪低落时，你会用什么方式去安慰和支持？",
-                        followUps: {
-                            approach: "你选择{point}的方式很温暖，能分享一个具体的例子吗？",
-                            reason: "为什么会想到用{point}这种方式？有什么特别的考虑吗？",
-                            effect: "这种方式带来了什么样的效果？对方是如何回应的？"
-                        }
-                    },
-                    {
-                        ai: "遇到意见分歧时，你是如何表达自己的想法，同时也倾听对方的声音？",
-                        followUps: {
-                            express: "你通过{point}来表达的方式很有智慧，能详细说说吗？",
-                            listen: "在{point}的过程中，你会特别注意什么？",
-                            resolve: "如何通过{point}来达成共识？能分享一些技巧吗？"
-                        }
-                    },
-                    {
-                        ai: "长期关系中可能会出现倦怠期，你会用什么方式来保持感情的新鲜感？",
-                        followUps: {
-                            maintain: "你提到{point}的方法很有创意，是如何想到的？",
-                            surprise: "关于{point}的小惊喜很贴心，能举些例子吗？",
-                            grow: "在{point}的过程中，你们是如何一起成长的？"
-                        }
-                    },
-                    {
-                        ai: "当对方需要独处空间时，你会如何理解和处理这种状况？",
-                        followUps: {
-                            understand: "你对{point}的理解很深刻，是什么让你有这样的认识？",
-                            space: "在给予{point}的同时，如何维持联系？",
-                            balance: "如何平衡{point}和亲密度？能分享一些经验吗？"
-                        }
-                    },
-                    {
-                        ai: "如何在忙碌的生活中，保持感情的温度和关注度？",
-                        followUps: {
-                            time: "你通过{point}来创造时间的方式很棒，能详细说说吗？",
-                            quality: "关于提升{point}的建议很实用，是如何执行的？",
-                            ritual: "建立{point}的仪式感很重要，你们有什么特别的习惯吗？"
-                        }
-                    }
-                ]
-            },
-            {
-                title: "兴趣发展",
-                context: "探讨如何在工作之余发展个人兴趣爱好",
-                role: "兴趣指导",
-                rounds: [
-                    {
-                        ai: "你是如何发现并培养自己的兴趣爱好的？能分享一下这个过程吗？",
-                        followUps: {
-                            discover: "通过{point}发现兴趣的经历很有趣，能详细说说吗？",
-                            develop: "在发展{point}的过程中，遇到过什么挑战？",
-                            benefit: "这个兴趣给你带来了哪些意想不到的收获？"
-                        }
-                    },
-                    {
-                        ai: "在工作繁忙的情况下，你是如何坚持兴趣爱好的？",
-                        followUps: {
-                            arrange: "你通过{point}来安排时间的方法很实用，能具体说说吗？",
-                            persist: "在坚持{point}的过程中，是什么让你没有放弃？",
-                            balance: "如何平衡{point}和其他生活重心？有什么心得？"
-                        }
-                    },
-                    {
-                        ai: "通过兴趣爱好认识了新朋友，你是如何发展和维护这些友谊的？",
-                        followUps: {
-                            connect: "通过{point}建立联系的方式很好，能分享更多细节吗？",
-                            share: "在{point}的分享过程中，有什么特别的经历？",
-                            grow: "这些友谊如何促进了你在兴趣上的进步？"
-                        }
-                    },
-                    {
-                        ai: "你的兴趣是否影响了你的生活或工作方式？能具体说说吗？",
-                        followUps: {
-                            impact: "你提到{point}带来的改变很有意思，能举个例子吗？",
-                            transfer: "将{point}的经验运用到其他领域的想法很棒，如何实践的？",
-                            value: "这些经历给你带来了什么新的认识？"
-                        }
-                    },
-                    {
-                        ai: "对于想要发展兴趣爱好但不知从何开始的人，你有什么建议？",
-                        followUps: {
-                            start: "从{point}开始的建议很实用，能详细说说原因吗？",
-                            explore: "关于{point}的探索方式很有启发，是基于什么经验？",
-                            encourage: "你是如何克服{point}的困难的？能分享一些经验吗？"
-                        }
-                    }
-                ]
-            },
-            {
-                title: "学习成长",
-                context: "讨论终身学习和个人成长的经验",
-                role: "学习顾问",
-                rounds: [
-                    {
-                        ai: "在工作后坚持学习新知识，你是如何保持学习动力的？",
-                        followUps: {
-                            motivation: "你通过{point}来保持动力的方式很特别，能详细说说吗？",
-                            method: "关于{point}的学习方法很有效，是如何发现的？",
-                            challenge: "在克服{point}的困难时，你是怎么做的？"
-                        }
-                    },
-                    {
-                        ai: "面对快速变化的技术和知识更新，你是如何选择学习方向的？",
-                        followUps: {
-                            choice: "你选择{point}作为方向的考虑很全面，能分享决策过程吗？",
-                            plan: "关于{point}的学习规划很系统，是如何制定的？",
-                            adapt: "在适应{point}的变化时，你用了什么策略？"
-                        }
-                    },
-                    {
-                        ai: "你是如何将学习到的知识转化为实际应用的？能分享一些经验吗？",
-                        followUps: {
-                            apply: "通过{point}来实践的方式很智慧，能具体说说吗？",
-                            integrate: "将{point}整合到工作中的过程很有趣，遇到过什么挑战？",
-                            result: "这种应用带来了什么具体的改变或收获？"
-                        }
-                    },
-                    {
-                        ai: "在学习过程中遇到瓶颈时，你会用什么方法来突破？",
-                        followUps: {
-                            break: "你通过{point}来突破瓶颈的方法很有创意，能详细说说吗？",
-                            support: "寻求{point}的支持很重要，你是如何找到资源的？",
-                            persist: "在坚持{point}的过程中，是什么让你没有放弃？"
-                        }
-                    },
-                    {
-                        ai: "你是如何评估学习效果，并根据反馈调整学习方式的？",
-                        followUps: {
-                            evaluate: "你通过{point}来评估的方法很系统，能分享更多细节吗？",
-                            adjust: "根据{point}来调整的过程很有启发，是如何决定的？",
-                            improve: "这些调整带来了什么样的提升？"
-                        }
-                    }
-                ]
-            },
-            {
-                title: "压力管理",
-                context: "探讨如何应对和管理生活中的各种压力",
-                role: "心理顾问",
-                rounds: [
-                    {
-                        ai: "当面对多重压力时，你会如何识别和处理最紧迫的问题？",
-                        followUps: {
-                            identify: "你通过{point}来分析问题的方法很清晰，能详细说说吗？",
-                            prioritize: "关于{point}的优先级排序很有条理，是基于什么考虑？",
-                            handle: "处理{point}的方式很有效，能分享具体步骤吗？"
-                        }
-                    },
-                    {
-                        ai: "工作压力可能会影响情绪和身体状态，你有什么好的调节方法吗？",
-                        followUps: {
-                            relax: "你提到的{point}放松方式很独特，能具体说说效果吗？",
-                            balance: "在保持{point}平衡的过程中，有什么特别的心得？",
-                            health: "关注{point}的健康方式很重要，你是如何坚持的？"
-                        }
-                    },
-                    {
-                        ai: "在压力大的时候，你会向谁倾诉？如何选择倾诉对象？",
-                        followUps: {
-                            share: "你选择{point}作为倾诉对象的原因很有趣，能详细说说吗？",
-                            trust: "建立{point}的信任关系很重要，是如何维护的？",
-                            support: "获得{point}的支持对你有什么帮助？"
-                        }
-                    },
-                    {
-                        ai: "你是否有过压力导致的消极经历？是如何走出来的？",
-                        followUps: {
-                            experience: "你通过{point}走出困境的经历很鼓舞人，能分享更多细节吗？",
-                            learn: "从{point}中学到的经验很宝贵，对你有什么改变？",
-                            grow: "这段经历如何帮助你在处理压力方面成长？"
-                        }
-                    },
-                    {
-                        ai: "面对长期的压力，你会如何调整心态和生活方式？",
-                        followUps: {
-                            mindset: "你培养{point}的心态很积极，是如何做到的？",
-                            change: "关于{point}的改变很有启发，能分享具体的转变过程吗？",
-                            maintain: "如何保持{point}的长期效果？有什么建议？"
-                        }
+                        question: '看来我们有很多共同话题，要不要改天一起参加一个相关的活动？',
+                        analysis: ['社交意愿', '边界设定', '关系发展']
                     }
                 ]
             }
@@ -801,258 +591,304 @@ function generateScenarioQuestion() {
 function startAnalysis() {
     console.log('开始分析...');
     
-    // 隐藏开始按钮
-    const startButton = document.querySelector('.start-analysis-btn');
-    if (startButton) {
-        startButton.style.display = 'none';
+    // 重置状态
+    currentState = {
+        sceneIndex: 0,
+        roundIndex: 0,
+        isWaitingForResponse: false
+    };
+    
+    // 完全清空聊天区域
+    if (elements.messagesContainer) {
+        elements.messagesContainer.innerHTML = '';
     }
     
     // 显示必要的UI元素
-    document.querySelector('.analysis-progress').classList.add('active');
-    document.querySelector('.chat-container').classList.add('active');
+    if (elements.analysisProgress) elements.analysisProgress.style.display = 'block';
+    if (elements.chatContainer) elements.chatContainer.style.display = 'block';
+    if (elements.sceneInfo) elements.sceneInfo.style.display = 'block';
     
-    // 重置分析状态
-    styleAnalysis.currentSceneIndex = 0;
-    styleAnalysis.currentRoundIndex = 0;
-    styleAnalysis.waitingForResponse = false;
+    // 隐藏开始按钮
+    if (elements.startButton) {
+        elements.startButton.style.display = 'none';
+    }
     
-    // 清空聊天记录
+    // 发送欢迎消息 - 使用assistant类型
+    appendMessage('assistant', `欢迎来到AI语言风格分析！我是你的分析助手。接下来我们将通过轻松的对话来了解你的语言风格特点。
+
+我们会经历几个不同的场景，每个场景都会有几轮对话。请你像平常一样自然地回答就好。
+
+准备好了吗？让我们从第一个场景开始！`);
+    
+    // 延迟后开始第一个场景
+    setTimeout(() => {
+        startScene(0);
+    }, 2000);
+}
+
+// 开始新场景
+function startScene(sceneIndex) {
+    const scene = dialogueScenarios.scenes[sceneIndex];
+    if (!scene) return;
+
+    // 清空聊天区域，确保没有重复消息
     const chatMessages = document.querySelector('.chat-messages');
     if (chatMessages) {
         chatMessages.innerHTML = '';
     }
     
-    // 开始第一个场景
-    const firstScene = dialogueScenarios.scenes[0];
-    if (firstScene) {
-        appendMessage('ai', `让我们开始第一个场景：${firstScene.title}\n${firstScene.context}`);
+    // 更新场景信息
+    const sceneTitle = document.querySelector('.scene-title');
+    const sceneContext = document.querySelector('.scene-context');
+    const myRole = document.querySelector('.my-role strong');
+    const aiRole = document.querySelector('.ai-role strong');
+
+    if (sceneTitle) sceneTitle.textContent = scene.title;
+    if (sceneContext) sceneContext.textContent = scene.context;
+    if (myRole) myRole.textContent = scene.userRole;
+    if (aiRole) aiRole.textContent = scene.aiRole;
+
+    // 发送场景介绍，使用assistant类型而非ai类型
+    appendMessage('assistant', `【${scene.title}】
+
+${scene.context}
+
+你的角色是：${scene.userRole}
+我的角色是：${scene.aiRole}`);
+
+    // 延迟后发送第一个问题
                 setTimeout(() => {
-            const firstRound = firstScene.rounds[0];
-            if (firstRound) {
-                appendMessage('ai', firstRound.ai);
-                styleAnalysis.waitingForResponse = true;
-            }
+        // 只显示第一个问题，不再自动显示后续问题
+        // 使用assistant类型而非ai类型
+        appendMessage('assistant', scene.rounds[0].question);
+        
+        // 设置状态为等待用户回应
+        currentState.isWaitingForResponse = true;
+        
+        // 确保输入和发送按钮是启用状态
+        if (elements.sendButton) elements.sendButton.disabled = false;
+        if (elements.messageInput) elements.messageInput.disabled = false;
         }, 1500);
-    }
+
+    // 更新当前状态
+    currentState.sceneIndex = sceneIndex;
+    currentState.roundIndex = 0;
     
-    // 更新进度条
+    // 更新进度
     updateProgress();
 }
 
-// 发送消息
-function sendMessage() {
-    const messageInput = document.querySelector('.message-input');
-    const message = messageInput.value.trim();
-    
-    if (!message) {
-        console.log('消息为空，忽略发送');
-        return;
-    }
-    
-    // 清空输入框
-    messageInput.value = '';
-    
-    // 处理用户回答
-    handleUserResponse(message);
-}
-
-// 处理用户回答
-function handleUserResponse(message) {
-    console.log('处理用户回答:', message);
-    
-    // 显示用户消息
-    appendMessage('user', message);
-    
-    // 获取当前场景和回合
-    const currentScene = dialogueScenarios.scenes[styleAnalysis.currentSceneIndex];
-    const currentRound = currentScene?.rounds[styleAnalysis.currentRoundIndex];
-    
-    if (!currentScene || !currentRound) {
-        console.error('无法获取当前场景或回合');
-        return;
-    }
-    
-    // 生成AI回应
-    const followUpKey = Object.keys(currentRound.followUps)[Math.floor(Math.random() * Object.keys(currentRound.followUps).length)];
-    const followUpTemplate = currentRound.followUps[followUpKey];
-    const aiResponse = followUpTemplate.replace('{point}', extractMainPoint(message));
-    
-    // 显示AI回应
-    setTimeout(() => {
-        appendMessage('ai', aiResponse);
-        
-        // 准备下一轮对话
-        setTimeout(() => {
-            styleAnalysis.currentRoundIndex++;
-            
-            // 检查是否需要进入下一个场景
-            if (styleAnalysis.currentRoundIndex >= currentScene.rounds.length) {
-                styleAnalysis.currentSceneIndex++;
-                styleAnalysis.currentRoundIndex = 0;
-                
-                // 检查是否所有场景都完成
-                if (styleAnalysis.currentSceneIndex >= dialogueScenarios.scenes.length) {
-                    finishAnalysis();
-                    return;
-                }
-                
-                // 开始新场景
-                const nextScene = dialogueScenarios.scenes[styleAnalysis.currentSceneIndex];
-                appendMessage('ai', `让我们进入下一个场景：${nextScene.title}\n${nextScene.context}`);
-                setTimeout(() => {
-                    appendMessage('ai', nextScene.rounds[0].ai);
-                }, 1500);
-            } else {
-                // 继续当前场景的下一轮
-                appendMessage('ai', currentScene.rounds[styleAnalysis.currentRoundIndex].ai);
-            }
-            
-            // 更新进度条
-            updateProgress();
-        }, 1500);
-    }, 1000);
-}
-
-// 提取用户回答中的主要观点
-function extractMainPoint(message) {
-    const sentences = message.split(/[。！？.!?]/);
-    return sentences[0] || message.substring(0, 20);
-}
-
-// 更新进度条
+// 更新进度
 function updateProgress() {
-    console.log('更新进度条...');
+    if (!elements.progressFill || !elements.analysisStage) return;
     
     const totalScenes = dialogueScenarios.scenes.length;
     const totalRounds = dialogueScenarios.scenes.reduce((total, scene) => total + scene.rounds.length, 0);
-    const currentScene = styleAnalysis.currentSceneIndex || 0;
-    const currentRound = styleAnalysis.currentRoundIndex || 0;
-    
-    // 计算当前完成的轮次总数
-    const completedRounds = dialogueScenarios.scenes.slice(0, currentScene).reduce((total, scene) => total + scene.rounds.length, 0) + currentRound;
-    
-    // 计算进度百分比
-    const progress = (completedRounds / totalRounds) * 100;
+    const completedRounds = dialogueScenarios.scenes.slice(0, currentState.sceneIndex).reduce((total, scene) => total + scene.rounds.length, 0) + currentState.roundIndex;
     
     // 更新进度条
-    const progressBar = document.querySelector('.progress-fill');
-    const progressText = document.querySelector('#analysis-stage');
+    const progress = (completedRounds / totalRounds) * 100;
+    elements.progressFill.style.width = `${progress}%`;
     
-    if (progressBar && progressText) {
-        progressBar.style.width = `${progress}%`;
-        const currentSceneTitle = dialogueScenarios.scenes[currentScene]?.title || '分析完成';
-        progressText.textContent = `${currentSceneTitle} (${Math.round(progress)}%)`;
-                } else {
-        console.error('未找到进度条元素');
+    // 更新进度文本
+    const currentScene = dialogueScenarios.scenes[currentState.sceneIndex];
+    elements.analysisStage.textContent = `${currentScene.title} - 第 ${currentState.roundIndex + 1}/${currentScene.rounds.length} 轮对话`;
+}
+
+// 处理用户回答
+async function handleUserResponse(userMessage) {
+    if (!userMessage.trim()) return;
+
+    // 禁用输入和发送按钮，防止重复发送
+    if (elements.sendButton) elements.sendButton.disabled = true;
+    if (elements.messageInput) elements.messageInput.disabled = true;
+    
+    // 避免重复，只在等待用户回应时处理
+    if (!currentState.isWaitingForResponse) {
+        console.log('当前不在等待用户回应状态，忽略消息');
+        
+        // 重新启用输入和按钮
+        if (elements.sendButton) elements.sendButton.disabled = false;
+        if (elements.messageInput) elements.messageInput.disabled = false;
+        return;
     }
+    
+    // 设置为非等待状态，避免重复处理
+    currentState.isWaitingForResponse = false;
+
+    // 添加用户消息到对话区域（移动到这里，确保只添加一次）
+    appendMessage('user', userMessage);
+
+    try {
+        // 获取API配置 - 优先使用window.API_CONFIG，如果不可用则使用备用配置
+        const apiConfig = window.API_CONFIG || BACKUP_API_CONFIG;
+        console.log('使用API配置:', apiConfig);
+
+        const currentScene = dialogueScenarios.scenes[currentState.sceneIndex];
+        const currentRound = currentScene.rounds[currentState.roundIndex];
+        
+        // 构建完整的对话上下文
+        const dialogueContext = {
+            scene: currentScene.title,
+            background: currentScene.context,
+            userRole: currentScene.userRole,
+            aiRole: currentScene.aiRole,
+            currentQuestion: currentRound.question,
+            analysisPoints: currentRound.analysis,
+            userReply: userMessage
+        };
+
+        // 准备 API 请求
+        const requestBody = {
+            model: apiConfig.MODEL,
+            messages: [
+                {
+                    role: "system",
+                    content: `你是一个专业的对话助手，擅长理解用户意图并给出恰当的回应。当前场景：${dialogueContext.scene}，你扮演${dialogueContext.aiRole}的角色，用户扮演${dialogueContext.userRole}的角色。请根据用户的回答给出恰当的回应。回应要自然、符合角色身份，不要机械化。`
+                },
+                {
+                    role: "user",
+                    content: userMessage
+                }
+            ],
+            temperature: apiConfig.TEMPERATURE,
+            max_tokens: apiConfig.MAX_TOKENS,
+            stream: false
+        };
+
+        console.log('发送API请求:', {
+            endpoint: apiConfig.API_ENDPOINT,
+            model: apiConfig.MODEL,
+            temperature: apiConfig.TEMPERATURE,
+            currentSceneIndex: currentState.sceneIndex,
+            currentRoundIndex: currentState.roundIndex
+        });
+
+        // 发送 API 请求
+        const response = await fetch(apiConfig.API_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiConfig.API_KEY}`
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || 'API 请求失败');
+        }
+
+        const data = await response.json();
+        
+        // 获取AI回复
+        const aiResponse = data.choices[0].message.content;
+
+        // 添加 AI 回复到对话区域
+        appendMessage('assistant', aiResponse);
+        
+        // 更新进度
+        updateProgress();
+
+        // 自动准备下一轮对话，延迟2秒以便用户阅读当前回复
+        setTimeout(() => {
+            prepareNextRound();
+        }, 2000);
+
+    } catch (error) {
+        console.error('处理用户回复时出错:', error);
+        appendMessage('system', '抱歉，处理您的回复时出现了问题。可能是由于：\n1. API 密钥无效\n2. 网络连接问题\n3. 服务器响应超时\n\n请稍后再试或联系管理员。');
+        currentState.isWaitingForResponse = true;
+        
+        // 出错时重新启用输入和按钮
+        if (elements.sendButton) elements.sendButton.disabled = false;
+        if (elements.messageInput) elements.messageInput.disabled = false;
+    }
+}
+
+// 自动准备下一轮对话，替代显示"继续对话"按钮
+function prepareNextRound() {
+    // 获取当前场景和回合
+    const currentScene = dialogueScenarios.scenes[currentState.sceneIndex];
+    
+    // 检查是否还有下一个问题
+    if (currentState.roundIndex < currentScene.rounds.length - 1) {
+        // 进入下一轮对话
+        currentState.roundIndex++;
+        
+        // 获取下一个问题
+        const nextQuestion = currentScene.rounds[currentState.roundIndex].question;
+        
+        // 确保聊天区域中没有相同的问题
+        const chatMessages = document.querySelector('.chat-messages');
+        let isDuplicate = false;
+        
+        if (chatMessages) {
+            const allMessages = chatMessages.querySelectorAll('.message');
+            // 检查最后几条消息是否包含要发送的问题
+            for (let i = Math.max(0, allMessages.length - 5); i < allMessages.length; i++) {
+                const messageText = allMessages[i].querySelector('.message-text')?.textContent;
+                if (messageText === nextQuestion) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+        }
+        
+        // 如果不是重复的问题才添加到聊天区域
+        if (!isDuplicate) {
+            // 使用assistant类型（API回复类型）而非ai类型（模板回复类型）
+            appendMessage('assistant', nextQuestion);
+        }
+        
+        // 设置为等待用户响应状态
+        currentState.isWaitingForResponse = true;
+        
+        // 重新启用输入和按钮
+        if (elements.sendButton) elements.sendButton.disabled = false;
+        if (elements.messageInput) elements.messageInput.disabled = false;
+        
+        // 更新进度
+        updateProgress();
+    } else if (currentState.sceneIndex < dialogueScenarios.scenes.length - 1) {
+        // 进入下一个场景
+        currentState.sceneIndex++;
+        currentState.roundIndex = 0;
+        startScene(currentState.sceneIndex);
+    } else {
+        // 所有场景完成
+        appendMessage('system', '🎉 恭喜！你已完成所有对话场景的分析。');
+    }
+}
+
+// 分析用户回答
+function analyzeResponse(message, analysisPoints) {
+    analysisPoints.forEach(point => {
+        console.log(`分析维度: ${point}, 用户回答: ${message}`);
+    });
 }
 
 // 完成分析
 function finishAnalysis() {
-    console.log('完成分析...');
+    appendMessage('ai', '太好了！我们已经完成了所有场景的对话。让我为你生成分析报告...');
+    if (elements.analysisStage) elements.analysisStage.textContent = '生成分析报告';
+    if (elements.progressFill) elements.progressFill.style.width = '100%';
+    currentState.isWaitingForResponse = false;
     
-    // 隐藏对话区域
-    document.querySelector('.chat-container').classList.remove('active');
-    
-    // 生成分析结果
-    const results = generateResults();
-    
-    // 更新结果显示
-    updateResultDisplay(results);
-    
-    // 显示结果确认区域
-    document.querySelector('.result-confirmation').classList.add('active');
-    
-    // 更新个人名片中的语言风格标签
-    updateStyleTags(results);
-}
-
-// 生成分析结果
-function generateResults() {
-    return {
-        sentence: styleAnalysis.results.sentence || '简洁明了',
-        rhythm: styleAnalysis.results.rhythm || '平稳有序',
-        punctuation: styleAnalysis.results.punctuation || '规范使用',
-        habit: styleAnalysis.results.habit || '客观理性',
-        organization: styleAnalysis.results.organization || '逻辑清晰'
-    };
-}
-
-// 更新结果显示
-function updateResultDisplay(results) {
-    const resultContent = document.querySelector('.result-content');
-    resultContent.innerHTML = `
-        <div class="result-item">
-            <label>句式特点：</label>
-            <span class="result-value">${results.sentence}</span>
-        </div>
-        <div class="result-item">
-            <label>表达节奏：</label>
-            <span class="result-value">${results.rhythm}</span>
-        </div>
-        <div class="result-item">
-            <label>标点使用：</label>
-            <span class="result-value">${results.punctuation}</span>
-        </div>
-        <div class="result-item">
-            <label>语言习惯：</label>
-            <span class="result-value">${results.habit}</span>
-        </div>
-        <div class="result-item">
-            <label>组织结构：</label>
-            <span class="result-value">${results.organization}</span>
-        </div>
-    `;
-}
-
-// 更新语言风格标签
-function updateStyleTags(results) {
-    document.getElementById('sentence-style').textContent = results.sentence;
-    document.getElementById('rhythm-style').textContent = results.rhythm;
-    document.getElementById('punctuation-style').textContent = results.punctuation;
-    document.getElementById('habit-style').textContent = results.habit;
-    document.getElementById('organization-style').textContent = results.organization;
-}
-
-// 确认结果
-function confirmResults() {
-    console.log('确认结果...');
-    
-    // 隐藏分析相关的元素
-    document.querySelector('.analysis-progress').classList.remove('active');
-    document.querySelector('.result-confirmation').classList.remove('active');
-    
-    // 显示开始按钮
-    const startButton = document.querySelector('.start-analysis-btn');
-    if (startButton) {
-        startButton.style.display = 'block';
-    }
-}
-
-// 修改结果
-function modifyResults() {
-    console.log('修改结果...');
-    
-    // 隐藏结果确认区域
-    document.querySelector('.result-confirmation').classList.remove('active');
-    
-    // 显示对话区域
-    document.querySelector('.chat-container').classList.add('active');
-    
-    // 重新开始最后一个场景
-    if (styleAnalysis.currentSceneIndex > 0) {
-        styleAnalysis.currentSceneIndex--;
-    }
-    styleAnalysis.currentRoundIndex = 0;
-    
-    const currentScene = dialogueScenarios.scenes[styleAnalysis.currentSceneIndex];
-    if (currentScene) {
-        appendMessage('ai', `让我们重新开始这个场景：${currentScene.title}\n${currentScene.context}`);
+    // 这里可以添加生成最终分析报告的逻辑
         setTimeout(() => {
-            appendMessage('ai', currentScene.rounds[0].ai);
-        }, 1500);
+        generateFinalReport();
+    }, 2000);
     }
+
+// 生成最终报告
+function generateFinalReport() {
+    // 这里添加生成报告的逻辑
+    console.log('生成最终分析报告...');
 }
+
+// 添加对话历史数组
+let dialogueHistory = [];
 
 // 添加消息到聊天区域
 function appendMessage(sender, content) {
@@ -1062,6 +898,49 @@ function appendMessage(sender, content) {
     if (!chatMessages) {
         console.error('未找到聊天消息容器');
         return;
+    }
+    
+    // 检查最后一条消息是否与当前消息相同（防止重复）
+    const lastMessage = chatMessages.lastElementChild;
+    if (lastMessage) {
+        const lastMessageText = lastMessage.querySelector('.message-text')?.textContent;
+        const lastMessageClass = lastMessage.className;
+        
+        // 如果最后一条消息的内容和发送者与当前要添加的相同，则不添加
+        if (lastMessageText === content && lastMessageClass.includes(`${sender}-message`)) {
+            console.log('检测到重复消息，已忽略:', content);
+            return;
+        }
+        
+        // 当添加assistant消息（API生成的自然回复）时，检查是否有模板回复（ai消息）
+        if (sender === 'assistant') {
+            const allMessages = chatMessages.querySelectorAll('.message');
+            if (allMessages.length >= 2) {
+                const lastMessageElement = allMessages[allMessages.length - 1];
+                const secondLastMessageElement = allMessages[allMessages.length - 2];
+                
+                // 如果最后一条是模板回复(ai消息)，倒数第二条是用户消息，则移除模板回复并添加API回复
+                if (lastMessageElement.className.includes('ai-message') && 
+                    secondLastMessageElement.className.includes('user-message')) {
+                    console.log('移除模板回复，保留API生成的自然回复');
+                    lastMessageElement.remove();
+                }
+            }
+        }
+        
+        // 如果是添加模板回复(ai消息)，且最后一条已经是API回复(assistant消息)，则不添加模板回复
+        if (sender === 'ai') {
+            const allMessages = chatMessages.querySelectorAll('.message');
+            if (allMessages.length >= 1) {
+                const lastMessageElement = allMessages[allMessages.length - 1];
+                
+                // 如果最后一条是API回复，则不添加模板回复
+                if (lastMessageElement.className.includes('assistant-message')) {
+                    console.log('已有API回复，忽略模板回复');
+                    return;
+                }
+            }
+        }
     }
     
     const messageDiv = document.createElement('div');
@@ -1102,3 +981,277 @@ async function checkServerConnection() {
 
 // 在文件末尾添加加载完成信息
 console.log('profile.js 加载完成'); 
+
+// 分析用户回答
+function analyzeAspect(aspect, message) {
+    // 这里需要实现根据不同分析维度更新用户画像的逻辑
+    console.log(`分析用户回答：${aspect} - ${message}`);
+}
+
+// 对话场景定义
+const dialogueScenarios = {
+    scenes: [
+        {
+            title: "工作群聊场景",
+            context: "你正在一个项目组的工作群里，突然收到了项目经理的紧急消息。",
+            userRole: "团队成员",
+            aiRole: "项目经理",
+            rounds: [
+                {
+                    question: "@所有人 刚刚客户反馈首页有bug，线上用户反映很大，需要今晚加班处理一下，谁能负责一下？",
+                    analysis: ["工作态度", "责任感", "表达方式"]
+                },
+                {
+                    question: "好的，那麻烦你看一下。这个问题挺急的，大概什么时候能搞定？客户那边一直在催😓",
+                    analysis: ["时间把控", "压力处理", "沟通技巧"]
+                },
+                {
+                    question: "辛苦了！这么晚还在处理。对了，你觉得是什么原因导致的呢？后面要怎么避免？",
+                    analysis: ["问题分析", "解决方案", "总结能力"]
+                },
+                {
+                    question: "明白了。那你觉得我们是不是需要调整一下测试流程？或者有其他建议吗？",
+                    analysis: ["流程优化", "创新思维", "建议表达"]
+                },
+                {
+                    question: "这些建议都很好。最后问一下，你觉得团队在项目管理上还有什么需要改进的地方吗？",
+                    analysis: ["团队意识", "管理思维", "建设性反馈"]
+                }
+            ]
+        },
+        {
+            title: "相亲场景",
+            context: "你正在和一个经朋友介绍认识的相亲对象第一次见面。",
+            userRole: "被相亲者",
+            aiRole: "相亲对象",
+            rounds: [
+                {
+                    question: "听说你在互联网公司工作？我对这个行业挺感兴趣的，不过听说经常需要加班诶...",
+                    analysis: ["开放程度", "价值观", "表达方式"]
+                },
+                {
+                    question: "原来是这样啊。那平时周末喜欢做些什么呢？",
+                    analysis: ["生活态度", "兴趣爱好", "表达活力"]
+                },
+                {
+                    question: "我也很喜欢这些！对了，你平时怎么看待工作和生活的平衡呢？",
+                    analysis: ["价值取向", "生活理念", "思维方式"]
+                },
+                {
+                    question: "说到未来规划，你会考虑换一个压力小一点的工作吗？或者有其他想法？",
+                    analysis: ["职业规划", "决策倾向", "目标导向"]
+                },
+                {
+                    question: "感觉和你聊天很愉快呢。要不要加个微信，以后可以多交流？",
+                    analysis: ["社交意愿", "边界感", "委婉程度"]
+                }
+            ]
+        },
+        {
+            title: "工作面谈场景",
+            context: "你被部门主管叫到办公室谈话，话题关于最近的工作表现。",
+            userRole: "员工",
+            aiRole: "部门主管",
+            rounds: [
+                {
+                    question: "最近团队反映说你经常迟到，这个情况我们需要谈一谈。",
+                    analysis: ["责任心", "应变能力", "态度"]
+                },
+                {
+                    question: "我理解你的情况。不过作为团队的一员，你觉得应该怎么改善这个问题？",
+                    analysis: ["解决方案", "团队意识", "主动性"]
+                },
+                {
+                    question: "好的。另外，我注意到你最近的工作状态似乎不太理想，是遇到什么困难了吗？",
+                    analysis: ["坦诚度", "压力应对", "沟通意愿"]
+                },
+                {
+                    question: "明白了。那关于下个月新项目的核心开发工作，你觉得自己能胜任吗？",
+                    analysis: ["自信程度", "职业规划", "表达技巧"]
+                },
+                {
+                    question: "最后，你对自己未来在团队中的发展有什么想法或期望吗？",
+                    analysis: ["职业规划", "团队定位", "目标表达"]
+                }
+            ]
+        },
+        {
+            title: "朋友圈互动场景",
+            context: "你最近发了一条度假照片的朋友圈，收到了许久未联系的初中同学的互动。",
+            userRole: "发朋友圈的人",
+            aiRole: "初中同学",
+            rounds: [
+                {
+                    question: "[点赞了你的朋友圈] 哇！看到你去了马尔代夫！风景太美了！什么时候去的呀？😍",
+                    analysis: ["社交热情", "表情使用", "回应方式"]
+                },
+                {
+                    question: "真好呀！羡慕死了～话说你现在在哪个城市发展啊？有机会我们要一起聚聚！",
+                    analysis: ["社交意愿", "寒暄方式", "亲和度"]
+                },
+                {
+                    question: "我也在这边！太巧了，要不要改天约个饭叙叙旧啊？好久没见了！",
+                    analysis: ["社交边界", "约会意愿", "关系维护"]
+                },
+                {
+                    question: "对了，记得你之前是做设计的？现在还在做相关工作吗？",
+                    analysis: ["话题延展", "记忆分享", "关系连接"]
+                },
+                {
+                    question: "那太好了！我下个月正好要去你那个城市出差，要不要约个饭？😊",
+                    analysis: ["社交边界", "应对技巧", "委婉程度"]
+                }
+            ]
+        },
+        {
+            title: "客户投诉场景",
+            context: "你是客服人员，正在处理一位非常不满的客户的投诉。",
+            userRole: "客服人员",
+            aiRole: "愤怒的客户",
+            rounds: [
+                {
+                    question: "我等了整整两个小时外卖还没到！！！这是什么服务态度？我要投诉！😠",
+                    analysis: ["情绪处理", "专业度", "安抚能力"]
+                },
+                {
+                    question: "你们就知道说对不起！我现在要求：第一，立即安排送餐；第二，全额退款；第三，补偿我的时间损失！",
+                    analysis: ["危机处理", "谈判技巧", "解决方案"]
+                },
+                {
+                    question: "这个补偿方案我不满意！你们觉得我的时间这么不值钱吗？",
+                    analysis: ["情绪管理", "谈判策略", "解决能力"]
+                },
+                {
+                    question: "好吧，但是我要求你们必须严肃处理这个送餐员，这种服务态度太差了！",
+                    analysis: ["安抚技巧", "处理承诺", "专业表现"]
+                },
+                {
+                    question: "哼，这次就算了，不过你们必须改进！投诉我还是会写的！",
+                    analysis: ["总结能力", "后续跟进", "关系维护"]
+                }
+            ]
+        }
+    ]
+};
+
+// 显示编辑个人资料的模态框
+function showEditProfileModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>编辑个人资料</h3>
+            <div class="form-group">
+                <label>姓名：</label>
+                <input type="text" id="edit-name" value="${document.getElementById('profile-name').textContent}">
+            </div>
+            <div class="form-group">
+                <label>性别：</label>
+                <select id="edit-gender">
+                    <option value="男" ${document.getElementById('profile-gender').textContent === '男' ? 'selected' : ''}>男</option>
+                    <option value="女" ${document.getElementById('profile-gender').textContent === '女' ? 'selected' : ''}>女</option>
+                    <option value="其他" ${document.getElementById('profile-gender').textContent === '其他' ? 'selected' : ''}>其他</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>年龄：</label>
+                <input type="number" id="edit-age" value="${document.getElementById('profile-age').textContent}" min="1" max="120">
+            </div>
+            <div class="form-group">
+                <label>MBTI：</label>
+                <select id="edit-mbti">
+                    <option value="">请选择</option>
+                    <option value="INTJ">INTJ</option>
+                    <option value="INTP">INTP</option>
+                    <option value="ENTJ">ENTJ</option>
+                    <option value="ENTP">ENTP</option>
+                    <option value="INFJ">INFJ</option>
+                    <option value="INFP">INFP</option>
+                    <option value="ENFJ">ENFJ</option>
+                    <option value="ENFP">ENFP</option>
+                    <option value="ISTJ">ISTJ</option>
+                    <option value="ISFJ">ISFJ</option>
+                    <option value="ESTJ">ESTJ</option>
+                    <option value="ESFJ">ESFJ</option>
+                    <option value="ISTP">ISTP</option>
+                    <option value="ISFP">ISFP</option>
+                    <option value="ESTP">ESTP</option>
+                    <option value="ESFP">ESFP</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="save-btn" onclick="saveProfile()">保存</button>
+                <button class="cancel-btn" onclick="closeModal()">取消</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    // 设置当前MBTI值
+    const mbtiSelect = document.getElementById('edit-mbti');
+    const currentMbti = document.getElementById('profile-mbti').textContent;
+    if (currentMbti && currentMbti !== '未设置') {
+        mbtiSelect.value = currentMbti;
+    }
+}
+
+// 关闭模态框
+function closeModal() {
+    const modal = document.querySelector('.modal-overlay');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// 保存个人资料
+function saveProfile() {
+    const name = document.getElementById('edit-name').value.trim();
+    const gender = document.getElementById('edit-gender').value;
+    const age = document.getElementById('edit-age').value;
+    const mbti = document.getElementById('edit-mbti').value;
+
+    // 验证输入
+    if (!name) {
+        alert('请输入姓名');
+        return;
+    }
+    if (!age || age < 1 || age > 120) {
+        alert('请输入有效的年龄');
+        return;
+    }
+
+    // 更新显示
+    document.getElementById('profile-name').textContent = name;
+    document.getElementById('profile-gender').textContent = gender;
+    document.getElementById('profile-age').textContent = age;
+    document.getElementById('profile-mbti').textContent = mbti || '未设置';
+
+    // 保存到localStorage
+    const profile = {
+        name,
+        gender,
+        age,
+        mbti
+    };
+    localStorage.setItem('userProfile', JSON.stringify(profile));
+
+    // 关闭模态框
+    closeModal();
+}
+
+// 处理头像上传
+function handleAvatarUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const avatar = document.getElementById('profile-avatar');
+            if (avatar) {
+                avatar.src = e.target.result;
+                // 保存头像到localStorage
+                localStorage.setItem('userAvatar', e.target.result);
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+} 
